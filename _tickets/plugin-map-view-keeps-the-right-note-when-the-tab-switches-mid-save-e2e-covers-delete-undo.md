@@ -1,15 +1,15 @@
 ---
+closed_iso: 2026-10-26T23:42:24Z
 id: nid_48incacjmuach0kymaasz36du_e
 title: "Plugin: map view keeps the right note when the tab switches mid-save; E2E covers delete + undo"
-status: in_progress
+status: closed
 deps: []
 links: [nid_h4bhoi9jvbh3zny2ldnuxb0sq_e]
 created_iso: 2026-10-26T23:34:38Z
-status_updated_iso: 2026-10-26T23:35:00Z
+status_updated_iso: 2026-10-26T23:42:24Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
-pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-48incacj
 tags: [obsidian-mindmap-file]
 ---
 
