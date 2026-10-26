@@ -158,10 +158,13 @@ branches per pointer move, over a frozen base scene.
   `ReparentConfirmation` decides and holds the question, `ReparentDialog` asks (Enter confirms, Escape cancels), the
   drop stays frozen on screen and canvas presses are ignored meanwhile, Cancel sends nothing (the map is as before the
   drag); no question when `interaction.confirmReparent` is off. Dropping elsewhere
-  stores a library-local `PositionOverrides` entry and emits `onNodeReposition`. `buildScene(..., overrides)`
-  applies overrides after the pipeline and re-runs `resolveCollisions` with the overridden subtrees pinned in drop
-  order (no overrides = pipeline output untouched); a drop carries descendants' own overrides along, and a confirmed `move`
-  drops the moved subtree's overrides. Crossing the parent's centre line mirrors the subtree around the dragged node:
+  stores a library-local `PositionOverrides` entry (offset from the parent) and emits `onNodeReposition` plus
+  `onNodeOffsetsChange` (all overrides as plain `NodeOffsets` JSON; hosts restore them via `nodeOffsets` /
+  `setNodeOffsets`). `buildScene(..., overrides)` applies overrides after the pipeline, parents first, each at its
+  offset from the parent's placed centre (`Scene.placedPositions`: before the push-apart, so a pushed parent never
+  shifts a saved offset), and re-runs `resolveCollisions` with the overridden subtrees pinned in drop order (no
+  overrides = pipeline output untouched). Descendants' offsets travel with a drop (negated `dx` when it mirrors), and a
+  confirmed `move` drops the moved subtree's overrides (reported too). Crossing the parent's centre line mirrors the subtree around the dragged node:
   `subtreeMoveTo` is the single flip rule used by the drag preview, the stored drop and `applyPositionOverrides`.
   Hover buttons: "+" on the outer side (both sides for the root) opens the inline editor on a local draft child
   (`DRAFT_NODE_ID`, not sent until Enter). While they show, the hovered node keeps its hover over its hover area

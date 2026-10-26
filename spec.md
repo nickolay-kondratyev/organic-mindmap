@@ -173,7 +173,8 @@ structural edit is only shown as done once the host has actually done it.
   from the parent (dragging it back flips it back); the preview shows the flip. A
   small movement threshold keeps clicks and double-clicks from turning into drags.
   Reported as a position-change event; positions are layout, not structure, so no
-  confirmation.
+  confirmation. The host can hand saved positions back (by node id, as offset from the
+  parent node, so they still fit after the parent moves) to restore the layout.
 
 **Structural edits** (always go through the host)
 - I3. Move (reparent): drag a node and drop it onto another node to make it that
