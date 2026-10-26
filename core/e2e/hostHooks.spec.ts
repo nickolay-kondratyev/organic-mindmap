@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { HANDLE_GAP, HANDLE_RADIUS, LABEL_EDITOR_ACCESSIBLE_NAME, type NodeId, type Point } from 'organic-mindmap';
 import type { MindmapApi } from 'organic-mindmap/react';
-import { dragFromTo, nodeBox, nodesAt, viewZoom } from './demoPage';
+import { dragFromTo, hostData, nodeBox, nodesAt, viewZoom } from './demoPage';
 import { expect, test } from './fixtures';
 
 type DemoWindow = Window & { mindmap?: MindmapApi | null };
@@ -87,5 +87,21 @@ test.describe('host hooks for navigation', () => {
       await expect(clickReadout(page)).toHaveText('Last clicked: Hamlet');
       await expect(labelEditor(page)).toBeHidden();
     });
+  });
+});
+
+test.describe('host right-click menu', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/');
+    await nodeBox(page, 'root');
+  });
+
+  test('GIVEN the reference map WHEN VIDA is right-clicked and Delete chosen THEN VIDA and its children are gone', async ({ page }) => {
+    const vida = await nodeBox(page, 'vida');
+    await page.mouse.click(vida.center.x, vida.center.y, { button: 'right' });
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await expect
+      .poll(async () => (await hostData(page)).filter((node) => ['vida', 'hamlet', 'othello'].includes(node.id)))
+      .toEqual([]);
   });
 });

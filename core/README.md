@@ -21,6 +21,8 @@ in-memory host confirms immediately. Pan/zoom is library-local: `getView`/`setVi
 on the handle (or the `<Mindmap ref>`), user changes reported via `onViewChange`.
 
 Navigation hooks: `onNodeClick({ nodeId, ctrlKey, metaKey, altKey, shiftKey })` on every click on a node;
+`onNodeContextMenu({ nodeId, clientPoint })` on a right-click on a node, to open the host's own menu (e.g. delete via
+`requestEdit`; the browser's menu is suppressed on nodes only while it is set);
 `setHighlightedNode(id | null)` rings a node; `centerOnNode(id)` pans to it. `interaction.allowAdd` /
 `allowRename: false` give a move-only map. Heading-friendly options: `layout.sideOrder: 'clockwise'` (document
 order), `text.nodeFit.minFontScale` (long labels end with "…"). Labels with characters the font lacks (emoji, CJK)
@@ -35,8 +37,8 @@ fall back to system fonts on the node. Changes per version: [CHANGELOG.md](CHANG
 Starts on the Shakespeare reference map with default settings. The side panel has:
 - **Map**: zoom / fit buttons, "Reset map" back to the reference data. Edit on the canvas: hover a node for `+` (add
   child), double-click to rename, drag onto another node to make it a child there
-  (asks first; "Don't ask again" can be undone under Settings > Interaction). Clicking a node highlights it and
-  shows what the host was told.
+  (asks first; "Don't ask again" can be undone under Settings > Interaction), right-click to delete (the demo host's
+  own menu). Clicking a node highlights it and shows what the host was told.
 - **Paste Markdown**: paste a note and show its headings as the map (root = the single H1, else "Pasted note").
 - **Host simulation**: make the in-memory host answer slowly or reject every change, to see pending and rejected edits.
 - **Settings**: live controls for every config value (colors, node size incl. the depth scale, branches, text and

@@ -5,6 +5,7 @@ import { DEFAULT_EDIT_HANDLER } from './edit/inMemoryHost';
 import { resolveExtensions, type MindmapExtensions } from './extensions';
 import { CanvasInteractions } from './interaction/canvasInteractions';
 import type { NodeClickEvent } from './interaction/nodeClickEvent';
+import type { NodeContextMenuEvent } from './interaction/nodeContextMenuEvent';
 import type { NodeRepositionEvent } from './interaction/repositionEvent';
 import type { MindmapData, NodeId } from './model/node';
 import { drawScene, type Viewport } from './render/canvasRenderer';
@@ -40,6 +41,12 @@ export interface MountOptions {
    * stands for. Not fired for drags, pans or hover buttons. Fired for every click, so a double-click fires twice.
    */
   readonly onNodeClick?: (event: NodeClickEvent) => void;
+  /**
+   * A right-click on a node, with the node id and the viewport point, e.g. to open the host's own menu there and send
+   * `requestEdit({ type: 'delete', nodeId })` from it. While set, the browser's context menu is suppressed on nodes
+   * only; bare canvas keeps it and does not fire this.
+   */
+  readonly onNodeContextMenu?: (event: NodeContextMenuEvent) => void;
   /**
    * The user changed a setting from inside the map (e.g. "Don't ask again" in the reparent dialog). Gets the full
    * settings; store them (e.g. `SettingsPersistence.save`) and pass them back as `config`, since a later
@@ -135,6 +142,7 @@ class CanvasMount implements MindmapHandle {
       requestRepaint: () => this.scheduler.request(),
       onNodeReposition: (event) => options.onNodeReposition?.(event),
       onNodeClick: (event) => options.onNodeClick?.(event),
+      ...(options.onNodeContextMenu === undefined ? {} : { onNodeContextMenu: options.onNodeContextMenu }),
       // Same path as a host `setConfig`, so an in-map change can never skip what applying settings involves.
       changeConfig: (config) => {
         this.setConfig(config);
