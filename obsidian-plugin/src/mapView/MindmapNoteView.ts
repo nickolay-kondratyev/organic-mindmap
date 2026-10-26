@@ -1,4 +1,4 @@
-import { FileView, type Menu, type TFile, type WorkspaceLeaf } from 'obsidian';
+import { FileView, Menu, Notice, type TFile, type WorkspaceLeaf } from 'obsidian';
 import {
   mountMindmap,
   type EditRequest,
@@ -6,14 +6,23 @@ import {
   type MindmapData,
   type MindmapHandle,
   type NodeClickEvent,
+  type NodeContextMenuEvent,
+  type NodeId,
+  type NodeOffsets,
 } from 'organic-mindmap';
 import type { MindmapNote } from '../mindmapNote';
 import { firstLinkTarget } from './linkTarget';
-import { MindmapNoteSession } from './noteSession';
+import { MindmapNoteSession, type NoteTextFile, type WriteSnapshot } from './noteSession';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
 
 export const OPEN_AS_MARKDOWN_LABEL = 'Open as Markdown';
 const VIEW_ICON = 'git-fork';
+const DELETE_LABEL = 'Delete';
+const DELETED_MESSAGE = 'Deleted from the mindmap.';
+const UNDO_LABEL = 'Undo';
+const UNDO_CHANGED_SINCE_MESSAGE = 'Not undone: the note changed after the delete. Use the Markdown view or file recovery to get it back.';
+/** Long enough to notice the delete and reach "Undo". */
+const UNDO_NOTICE_MS = 10_000;
 
 export interface MindmapNoteViewDeps {
   readonly fontFetcher: FontFetcher;
@@ -36,6 +45,8 @@ export class MindmapNoteView extends FileView {
   private resizeObserver: ResizeObserver | null = null;
   /** The note the mounted map currently draws, to skip `setData` when a reload yields the same note. */
   private shownNote: MindmapNote | null = null;
+  /** The open "Undo" notice of the last delete; it only makes sense while this view shows that note. */
+  private undoNotice: Notice | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -123,7 +134,9 @@ export class MindmapNoteView extends FileView {
     if (this.handle === null) {
       this.mount(state.note);
     } else if (state.note !== this.shownNote) {
+      // A change from outside the map (typing, sync, undo): the note's saved positions win over the map's.
       this.handle.setData(state.note.toMindmapData());
+      this.handle.setNodeOffsets(state.note.positions);
     }
     this.shownNote = state.note;
   }
@@ -133,9 +146,12 @@ export class MindmapNoteView extends FileView {
     const canvas = this.contentEl.createEl('canvas');
     this.handle = mountMindmap(canvas, {
       data: note.toMindmapData(),
+      nodeOffsets: note.positions,
       fontFetcher: this.deps.fontFetcher,
       onEditRequest: (request) => this.writeEdit(request),
+      onNodeOffsetsChange: (offsets) => void this.savePositions(offsets),
       onNodeClick: (event) => this.openNodeLink(event),
+      onNodeContextMenu: (event) => this.showNodeMenu(event),
     });
     this.resizeObserver = new ResizeObserver(() => this.fitCanvasToContent());
     this.resizeObserver.observe(this.contentEl);
@@ -143,6 +159,8 @@ export class MindmapNoteView extends FileView {
   }
 
   private unmount(): void {
+    this.undoNotice?.hide();
+    this.undoNotice = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.handle?.destroy();
@@ -166,17 +184,70 @@ export class MindmapNoteView extends FileView {
 
   /** The library's `onEditRequest`: the written note's data, or a rejection with the plain reason. */
   private async writeEdit(request: EditRequest): Promise<MindmapData> {
-    const file = this.file;
-    if (file === null) throw new Error('The map has no note to write to');
+    const file = this.noteFile();
     try {
-      const data = await this.session.applyEdit(request, { process: (change) => this.app.vault.process(file, change) });
+      const { data, snapshot } = await this.session.applyEdit(request, file);
       this.shownNote = this.session.note;
+      if (request.type === 'delete') this.offerUndo(snapshot);
       return data;
     } catch (error) {
       // A stale refusal reloaded the session from the file's newer text: show it.
       this.render();
       throw error;
     }
+  }
+
+  /** The library's `onNodeOffsetsChange`: the whole reported set becomes the note's layout block. */
+  private async savePositions(offsets: NodeOffsets): Promise<void> {
+    try {
+      await this.session.savePositions(offsets, this.noteFile());
+      this.shownNote = this.session.note;
+    } catch (error) {
+      // The map already shows the drop; show the file's state again (positions included) and say why.
+      this.render();
+      new Notice(errorMessage(error));
+    }
+  }
+
+  private showNodeMenu(event: NodeContextMenuEvent): void {
+    const menu = new Menu();
+    menu.addItem((item) =>
+      item
+        .setTitle(DELETE_LABEL)
+        .setIcon('trash-2')
+        .onClick(() => this.requestDelete(event.nodeId)),
+    );
+    menu.showAtPosition({ x: event.clientPoint.x, y: event.clientPoint.y });
+  }
+
+  private requestDelete(nodeId: NodeId): void {
+    const submitted = this.handle?.requestEdit({ type: 'delete', nodeId });
+    // Refused up front (e.g. the root, or another edit still saving): nothing else shows the reason.
+    if (submitted?.kind === 'refused') new Notice(submitted.reason);
+  }
+
+  /** Destructive ops need undo: a notice with "Undo" that restores the text from before the delete. */
+  private offerUndo(snapshot: WriteSnapshot): void {
+    const message = createFragment((fragment) => {
+      fragment.createSpan({ text: `${DELETED_MESSAGE} ` });
+      // Any click on a notice hides it, so the button needs no hide call of its own.
+      fragment.createEl('button', { text: UNDO_LABEL }).addEventListener('click', () => void this.undo(snapshot));
+    });
+    this.undoNotice?.hide();
+    this.undoNotice = new Notice(message, UNDO_NOTICE_MS);
+  }
+
+  private async undo(snapshot: WriteSnapshot): Promise<void> {
+    const result = await this.session.undo(snapshot, this.noteFile());
+    this.render();
+    if (result === 'changedSince') new Notice(UNDO_CHANGED_SINCE_MESSAGE);
+  }
+
+  /** Every write is one `vault.process` on the open note. */
+  private noteFile(): NoteTextFile {
+    const file = this.file;
+    if (file === null) throw new Error('The map has no note to write to');
+    return { process: (change) => this.app.vault.process(file, change) };
   }
 
   private openNodeLink(event: NodeClickEvent): void {
@@ -186,4 +257,8 @@ export class MindmapNoteView extends FileView {
     const inNewTab = event.ctrlKey || event.metaKey;
     void this.app.workspace.openLinkText(target, this.file.path, inNewTab);
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

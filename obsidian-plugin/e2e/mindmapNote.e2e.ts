@@ -9,7 +9,8 @@ import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
 /**
  * Key journeys of the mindmap note (ticket nid_lmtjqrjec483zha67vaaeydez_e): create -> the map shows the root; add a
  * child on the map -> the file contains it; rename a linked note -> the mindmap's link is updated and the map shows
- * it. Everything else is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
+ * it; drag a node, reopen the note -> the node is where it was left (ticket nid_kjtran7bnslnah9gj2fjr69rx_e).
+ * Everything else (delete + undo included) is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
  * import `obsidian`.
  */
 test.describe.configure({ mode: 'serial' });
@@ -20,6 +21,14 @@ const RENAMED_NOTE_PATH = 'Renamed note.md';
 /** A mindmap note whose name does not say so: the map opens by the frontmatter flag, not the file name. */
 const LINKING_MAP_PATH = 'Project map.md';
 const LINKING_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Project ^root', '\t- [[Linked note]] ^link1', ''].join('\n');
+const POSITIONS_MAP_PATH = 'Positions map.md';
+const POSITIONS_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Trip ^root', '\t- Packing ^pack', '\t- Route ^route', ''].join('\n');
+const DRAGGED_NODE_ID = 'pack';
+/** Screen px to drag the node straight down; far enough to be a clear move, into empty canvas. */
+const DRAG_DOWN_PX = 120;
+const DRAG_STEPS = 12;
+/** Scene px; saved offsets are rounded to whole pixels. */
+const POSITION_TOLERANCE_PX = 2;
 /** Pointer moves per node width, so the hover reaches the "+" like a real hand would. */
 const POINTER_STEP_PX = 10;
 
@@ -31,7 +40,11 @@ let page: Page;
 
 test.beforeAll(async () => {
   harness = await ObsidianHarness.launch({
-    extraFixtures: { [LINKED_NOTE_PATH]: '# Linked note\n', [LINKING_MAP_PATH]: LINKING_MAP_TEXT },
+    extraFixtures: {
+      [LINKED_NOTE_PATH]: '# Linked note\n',
+      [LINKING_MAP_PATH]: LINKING_MAP_TEXT,
+      [POSITIONS_MAP_PATH]: POSITIONS_MAP_TEXT,
+    },
   });
   page = harness.page;
 });
@@ -73,6 +86,34 @@ async function rootNodeBox(): Promise<{ box: NodeBox; zoom: number }> {
   const canvas = await page.locator('.workspace-leaf.mod-active canvas').boundingBox();
   if (canvas === null) throw new Error('The active map canvas is not visible');
   return { box: { center: { x: canvas.x + box.center.x, y: canvas.y + box.center.y }, size: box.size }, zoom };
+}
+
+/**
+ * Where the active map draws `nodeId` relative to its parent, in scene px (canvas px / zoom, so pan and zoom do not
+ * matter); waits until both are painted.
+ */
+async function offsetFromParent(nodeId: string): Promise<{ dx: number; dy: number }> {
+  const handle = await page.waitForFunction((id) => {
+    const map = (window as unknown as ObsidianWindow).app.workspace.activeLeaf?.view?.mapHandle;
+    const node = map?.getData().find((candidate: { id: string }) => candidate.id === id);
+    const box = node === undefined ? null : map.getNodeScreenBox(id);
+    const parentBox = node === undefined ? null : map.getNodeScreenBox(node.parentId);
+    if (box === null || parentBox === null) return null;
+    const zoom = map.getView().zoom;
+    return { dx: (box.center.x - parentBox.center.x) / zoom, dy: (box.center.y - parentBox.center.y) / zoom };
+  }, nodeId);
+  return (await handle.jsonValue()) as { dx: number; dy: number };
+}
+
+/** The node's center in page coordinates. */
+async function nodeCenterOnPage(nodeId: string): Promise<{ x: number; y: number }> {
+  const box = await page.evaluate(
+    (id) => (window as unknown as ObsidianWindow).app.workspace.activeLeaf?.view?.mapHandle?.getNodeScreenBox(id) ?? null,
+    nodeId,
+  );
+  const canvas = await page.locator('.workspace-leaf.mod-active canvas').boundingBox();
+  if (box === null || canvas === null) throw new Error(`Node is not painted: nodeId=[${nodeId}]`);
+  return { x: canvas.x + box.center.x, y: canvas.y + box.center.y };
 }
 
 test('WHEN "Create new mindmap" runs THEN a mindmap note opens as a map showing its root', async () => {
@@ -121,5 +162,34 @@ test.describe('GIVEN a mindmap note linking to another note, open as a map', () 
     );
     await expect.poll(() => vaultFileText(LINKING_MAP_PATH)).toContain('[[Renamed note]] ^link1');
     await expect.poll(async () => (await activeMapData())?.find((node) => node.id === 'link1')?.text).toBe('Renamed note');
+  });
+});
+
+test.describe('GIVEN a node dragged to a new spot on the map', () => {
+  let draggedOffset: { dx: number; dy: number };
+
+  test.beforeAll(async () => {
+    await harness.openFile(POSITIONS_MAP_PATH);
+    await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
+    await offsetFromParent(DRAGGED_NODE_ID);
+    const from = await nodeCenterOnPage(DRAGGED_NODE_ID);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x, from.y + DRAG_DOWN_PX, { steps: DRAG_STEPS });
+    await page.mouse.up();
+    await expect.poll(() => vaultFileText(POSITIONS_MAP_PATH)).toContain(`"${DRAGGED_NODE_ID}": {"dx"`);
+    draggedOffset = await offsetFromParent(DRAGGED_NODE_ID);
+  });
+
+  test('WHEN the note is closed and opened again THEN the node is where it was left', async () => {
+    await page.evaluate(() => (window as unknown as ObsidianWindow).app.workspace.activeLeaf.detach());
+    await harness.openFile(POSITIONS_MAP_PATH);
+    await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
+    await expect
+      .poll(async () => {
+        const reopened = await offsetFromParent(DRAGGED_NODE_ID);
+        return Math.max(Math.abs(reopened.dx - draggedOffset.dx), Math.abs(reopened.dy - draggedOffset.dy));
+      })
+      .toBeLessThanOrEqual(POSITION_TOLERANCE_PX);
   });
 });
