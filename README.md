@@ -1,54 +1,60 @@
-# organic-mindmap
+# Organic Mindmap (Obsidian plugin)
 
-Mindmap library for the web that feels hand-drawn: framework-free TypeScript core plus a thin React wrapper.
-Requirements live in [spec.md](spec.md); architecture in [docs/architecture.md](docs/architecture.md).
+Mindmaps for [Obsidian](https://obsidian.md) that feel hand-drawn: organic branches, glyph-outline labels along
+them, a tidy bilateral layout that does not look machine-made.
 
-## Use
+**Status: in development, not released.** Today the plugin only proves the plumbing (one command, "Show plugin
+status"). First planned feature: a **mindmap note**, a normal Markdown note flagged `organic-mindmap: 1` whose nested
+list is the tree, opened as a map, with `[[links]]` kept by Obsidian. Plan: [next-steps-prior-to-obsidian.md](next-steps-prior-to-obsidian.md).
 
-```tsx
-import { REFERENCE_DATA } from 'organic-mindmap';
-import { Mindmap } from 'organic-mindmap/react';
+Desktop only.
 
-<Mindmap data={REFERENCE_DATA} config={{ theme: { color: { background: '#101418' } } }} />;
-```
-
-Without React: `mountMindmap(canvas, { data })` returns a handle with `setData`, `setConfig`, `setExtensions`, `resize`, `destroy`.
-
-Structural edits (`move`, `add`, `rename`, `delete`) go to the host's `onEditRequest(request, currentData)`, which
-resolves with the host's updated data (rendered as-is) or rejects with a plain-language reason; without one, the
-in-memory host confirms immediately. Pan/zoom is library-local: `getView`/`setView`/`zoomIn`/`zoomOut`/`resetView`
-on the handle (or the `<Mindmap ref>`), user changes reported via `onViewChange`.
-
-Navigation hooks: `onNodeClick({ nodeId, ctrlKey, metaKey, altKey, shiftKey })` on every click on a node;
-`setHighlightedNode(id | null)` rings a node; `centerOnNode(id)` pans to it. `interaction.allowAdd` /
-`allowRename: false` give a move-only map. Heading-friendly options: `layout.sideOrder: 'clockwise'` (document
-order), `text.nodeFit.minFontScale` (long labels end with "…"). Labels with characters the font lacks (emoji, CJK)
-fall back to system fonts on the node. Changes per version: [core/CHANGELOG.md](core/CHANGELOG.md).
-
-## Demo runner
+## Install from source (for now)
 
 ```bash
-./run.sh            # installs deps if needed, then serves http://localhost:5173 (PORT=... to change)
+npm install
+npm run build:plugin          # bundles obsidian-plugin/main.js
 ```
 
-Starts on the Shakespeare reference map with default settings. The side panel has:
-- **Map**: zoom / fit buttons, "Reset map" back to the reference data. Edit on the canvas: hover a node for `+` (add
-  child), double-click to rename, drag onto another node to make it a child there
-  (asks first; "Don't ask again" can be undone under Settings > Interaction). Clicking a node highlights it and
-  shows what the host was told.
-- **Paste Markdown**: paste a note and show its headings as the map (root = the single H1, else "Pasted note").
-- **Host simulation**: make the in-memory host answer slowly or reject every change, to see pending and rejected edits.
-- **Settings**: live controls for every config value (colors, node size incl. the depth scale, branches, text and
-  fonts, layout, interaction) and "Reset settings".
+Copy `obsidian-plugin/main.js` and `manifest.json` into `<your vault>/.obsidian/plugins/organic-mindmap/`, then
+enable "Organic Mindmap" under Settings > Community plugins. Or `npm run setup:dev-vault` and open
+`obsidian-plugin/.dev-vault/` as a vault (the plugin is already installed there).
+
+## Repo layout
+
+npm workspaces monorepo:
+
+| Package | Path | What |
+|---|---|---|
+| `organic-mindmap` | [`core/`](core/README.md) | The mindmap library (framework-free core + React wrapper), its demo and tests. Usable on its own; knows nothing about Obsidian. |
+| plugin | `obsidian-plugin/` | The Obsidian plugin, built on the library's public API. Bundles to `obsidian-plugin/main.js`; `manifest.json` / `versions.json` live at the repo root (Obsidian's release flow). |
+
+Requirements: [spec.md](spec.md). Architecture: [docs/architecture.md](docs/architecture.md).
 
 ## Develop
 
-npm workspaces monorepo: the library lives in `core/` (package `organic-mindmap`). Run these from the repo root
-(they delegate to `core`) or from inside `core/`.
+```bash
+npm install                     # deps for both packages + Playwright Chromium
+npm run typecheck && npm test   # both packages (Vitest unit tests)
+npm run build                   # library to core/dist/ and plugin to obsidian-plugin/main.js
+npm run build:plugin            # plugin only; `npm run dev:plugin` rebuilds on change
+npm run e2e                     # library demo E2E (Playwright, Chromium)
+npm run test:e2e:obsidian       # plugin E2E in a REAL Obsidian (see below)
+```
+
+### Plugin E2E in a real Obsidian
+
+`npm run test:e2e:obsidian` builds the plugin, seeds `obsidian-plugin/.dev-vault/`, boots a real Obsidian (Electron)
+on a throwaway copy of that vault and drives it with Playwright over CDP. Not part of `npm test` (slow; a release
+gate). Runs headless on a display-less Linux box: the first run downloads a pinned Obsidian (`OBSIDIAN_VERSION` in
+`obsidian-plugin/scripts/setup-obsidian-bin.sh`) into git-ignored `.tmp/obsidian-e2e/bin/`.
 
 ```bash
-npm install         # deps + Playwright Chromium (`prepare` script, dev checkouts only)
-npm run dev         # demo on http://localhost:5173 (PORT=... to change)
-npm run typecheck && npm test && npm run build
-npm run e2e         # builds the demo, serves it on E2E_PORT (default 4173), runs Playwright
+npm run test:e2e:obsidian                       # Linux: downloads Obsidian once, headless if no display
+npm run test:e2e:obsidian -- smoke.e2e.ts        # one spec
+OBSIDIAN_PATH='/Applications/Obsidian.app/Contents/MacOS/Obsidian' npm run test:e2e:obsidian   # macOS / your own binary
 ```
+
+Env: `OBSIDIAN_PATH` (use this binary, skips the download), `OBSIDIAN_VERSION` (download another build for one run),
+`OBSIDIAN_CACHE_DIR` (share one download across checkouts), `OBSIDIAN_E2E_EXTRA_ARGS` (Chromium flags; defaults to
+headless flags when no display).
