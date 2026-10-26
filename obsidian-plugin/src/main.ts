@@ -4,6 +4,7 @@ import { CREATE_MINDMAP_COMMAND, SHOW_STATUS_COMMAND, TOGGLE_MINDMAP_VIEW_COMMAN
 import { bundledFontFetcher } from './mapView/bundledFonts';
 import { MindmapNoteView } from './mapView/MindmapNoteView';
 import { newMindmapNoteFileName, newNotePath, NEW_NOTE_ROOT_TEXT } from './mapView/newNote';
+import { routeSetViewState } from './mapView/viewRouting';
 import { MarkdownChoices, MARKDOWN_VIEW_TYPE, MINDMAP_VIEW_TYPE, resolveViewType } from './mapView/viewSwitch';
 import { isMindmapNote, newMindmapNoteText } from './mindmapNote';
 import { statusMessage } from './statusMessage';
@@ -43,18 +44,16 @@ export default class OrganicMindmapPlugin extends Plugin {
    * Opens mindmap notes (frontmatter `organic-mindmap: 1`) as a map wherever Obsidian would open them as Markdown
    * (file explorer, links, quick switcher, history), by wrapping `WorkspaceLeaf.setViewState`, the way Kanban and
    * Excalidraw route their `.md` files. Detection reads the file text (`isMindmapNote`, the one detection rule),
-   * so a file never needs to be indexed first. Unwrapped when the plugin unloads.
+   * so a file never needs to be indexed first. Unwrapped when the plugin unloads (`viewRouting.ts` keeps other
+   * plugins' wrappers of the same method intact).
    * WHY-NOT `registerExtensions`: it claims a file extension, and these notes are `.md` like every other note.
    */
   private routeMindmapNotesToMap(): void {
-    const plugin = this;
-    const original = WorkspaceLeaf.prototype.setViewState;
-    WorkspaceLeaf.prototype.setViewState = async function (this: WorkspaceLeaf, viewState: ViewState, eState?: unknown) {
-      return original.call(this, await plugin.routedViewStateOrRequested(this, viewState), eState);
-    };
-    this.register(() => {
-      WorkspaceLeaf.prototype.setViewState = original;
-    });
+    this.register(
+      routeSetViewState<ViewState, WorkspaceLeaf>(WorkspaceLeaf.prototype, (leaf, viewState) =>
+        this.routedViewStateOrRequested(leaf, viewState),
+      ),
+    );
   }
 
   /** Routing must never block opening a file: a failed detection (e.g. the file vanished mid-read) opens as requested. */
