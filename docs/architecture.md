@@ -269,8 +269,9 @@ page and loads none of the runner code or CSS.
   opens the map view instead, unless the user chose "Open as Markdown" for that note in that leaf. Detection by
   file text, not by name or metadata cache, so there is one rule and no indexing lag.
   Node clicks open the first `[[link]]` of the item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
-  `bundledFonts.ts` inlines the vendored Kalam (esbuild `binary` loader) behind the library's `fontFetcher` seam
-  (`fontBytes.ts`, rejects any URL that is not bundled), so the plugin never fetches from a CDN.
+  `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`,
+  esbuild `binary` loader) behind the library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not
+  bundled), so the plugin never fetches from a CDN and still imports only the library's public entry points.
 - Obsidian E2E (`npm run test:e2e:obsidian`, `e2e/*.e2e.ts`): `scripts/run-e2e.sh` provisions a pinned Obsidian
   (`scripts/setup-obsidian-bin.sh`, Linux download into `.tmp/obsidian-e2e/bin/`, or `OBSIDIAN_PATH`), seeds
   `.dev-vault/` with the built plugin, then `e2e/obsidianHarness.ts` spawns Obsidian on a throwaway copy of the vault

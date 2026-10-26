@@ -8,6 +8,10 @@ const PACKAGE_ROOT = path.dirname(fileURLToPath(import.meta.url));
  * package's SOURCE entry (tsconfig `paths`, esbuild and Vitest all use this one table).
  * WHY-NOT the built `core/dist/`: typecheck, bundle and tests would then depend on a prior `npm run build -w core`
  * and silently use a stale build after a core edit. Only the public entry is aliased, so the plugin still
- * cannot reach core internals.
+ * cannot reach core internals. Mirrors the library's `exports` (core/package.json): the public entry and its
+ * bundled font subpath.
  */
-export const CORE_ALIAS = { 'organic-mindmap': path.join(PACKAGE_ROOT, '../core/src/index.ts') };
+export const CORE_ALIAS = {
+  'organic-mindmap': path.join(PACKAGE_ROOT, '../core/src/index.ts'),
+  'organic-mindmap/fonts/kalam-latin-400-normal.ttf': path.join(PACKAGE_ROOT, '../core/assets/fonts/kalam/latin-400-normal.ttf'),
+};
