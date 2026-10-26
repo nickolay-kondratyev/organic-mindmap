@@ -117,7 +117,10 @@ export class ObsidianHarness {
       // Escape hatch for environment-specific Chromium flags (e.g. `--ozone-platform=headless` on display-less
       // machines) without editing the harness. Space-separated flags only; no quoting, so no values with spaces.
       ...(process.env['OBSIDIAN_E2E_EXTRA_ARGS']?.split(' ').filter((arg) => arg !== '') ?? []),
-    ]);
+    ], {
+      // Only stderr is read (the DevTools endpoint). An unread stdout pipe could fill and block Electron.
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
     try {
       const cdpEndpoint = await ObsidianHarness.waitForDevtoolsEndpoint(obsidianProcess);
       const browser = await chromium.connectOverCDP(cdpEndpoint, { timeout: LAUNCH_TIMEOUT_MS });
@@ -126,7 +129,7 @@ export class ObsidianHarness {
       await ObsidianHarness.enableCommunityPlugins(page);
       return new ObsidianHarness(browser, obsidianProcess, page);
     } catch (error) {
-      obsidianProcess.kill();
+      await ObsidianHarness.killAndWaitForExit(obsidianProcess);
       throw error;
     }
   }
