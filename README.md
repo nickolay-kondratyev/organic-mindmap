@@ -3,11 +3,33 @@
 Mindmaps for [Obsidian](https://obsidian.md) that feel hand-drawn: organic branches, glyph-outline labels along
 them, a tidy bilateral layout that does not look machine-made.
 
-**Status: in development, not released.** Today the plugin only proves the plumbing (one command, "Show plugin
-status"). First planned feature: a **mindmap note**, a normal Markdown note flagged `organic-mindmap: 1` whose nested
-list is the tree, opened as a map, with `[[links]]` kept by Obsidian. Plan: [next-steps-prior-to-obsidian.md](next-steps-prior-to-obsidian.md).
+**Status: in development, not released.** Desktop only. Plan: [next-steps-prior-to-obsidian.md](next-steps-prior-to-obsidian.md).
 
-Desktop only.
+## Mindmap notes
+
+A mindmap is a normal Markdown note flagged `organic-mindmap: 1` in its frontmatter. Its nested list is the tree
+(one top-level item = the root), and each item's block id (`^n7f3k`) is the node id:
+
+```markdown
+---
+organic-mindmap: 1
+---
+- Project Phoenix ^root
+	- [[Some note]] ^n7f3k
+		- plain idea ^n9a2b
+```
+
+- **Create:** command "Create new mindmap" makes `Mindmap <timestamp>.organic-mindmap.md` in your default new-note
+  folder and opens it as a map. Or add the frontmatter flag to any note with one top-level list.
+- **Open:** a flagged note opens as a map wherever you open it (file explorer, links, quick switcher). The map's
+  "..." menu has "Open as Markdown"; command "Toggle mindmap / Markdown view" switches either way.
+- **Edit on the map:** hover a node for "+" (add child), double-click to rename, drag onto another node to move it
+  there. Every change is written to the note at once; edits typed in a Markdown tab (or synced in) show up on the
+  open map. Delete and saved positions are not in yet.
+- **Links:** an item that contains a `[[link]]` shows the link's text and opens it on click (Ctrl/Cmd-click: new
+  tab). Since the mindmap is a normal note, Obsidian keeps its links updated when a linked note is renamed.
+- A note the plugin cannot read as a map says why and offers "Open as Markdown".
+- No network: the Kalam font is bundled (SIL OFL, `core/assets/fonts/kalam/OFL.txt`).
 
 ## Install from source (for now)
 
@@ -16,7 +38,7 @@ npm install
 npm run build:plugin          # bundles obsidian-plugin/main.js
 ```
 
-Copy `obsidian-plugin/main.js` and `manifest.json` into `<your vault>/.obsidian/plugins/organic-mindmap/`, then
+Copy `obsidian-plugin/main.js`, `obsidian-plugin/styles.css` and `manifest.json` into `<your vault>/.obsidian/plugins/organic-mindmap/`, then
 enable "Organic Mindmap" under Settings > Community plugins. Or `npm run setup:dev-vault` and open
 `obsidian-plugin/.dev-vault/` as a vault (the plugin is already installed there).
 

@@ -257,11 +257,26 @@ page and loads none of the runner code or CSS.
   `newMindmapNoteText`. It parses the text itself (WHY-NOT the metadata cache: it lags behind typing and is missing
   in unit tests). Ids generated for items without a block id only exist in that read and reach the file with the
   next write, so writes always go through the `MindmapNote` the map was drawn from.
+- `src/mapView/` is the map of one mindmap note. `MindmapNoteView` (a `FileView`, the only file importing
+  `obsidian` besides `main.ts`) mounts `mountMindmap` on a canvas, re-reads the note on every `vault` `modify` of its
+  file, and answers `onEditRequest` through `MindmapNoteSession` (`noteSession.ts`, pure): one `vault.process`
+  per edit that applies `MindmapNote.applyEdit` only when the file still holds the text the map was drawn from,
+  else reloads and refuses with `STALE_EDIT_REASON` (generated ids resolve only within one read; a stale write could
+  drop what was typed meanwhile). WHY-NOT `TextFileView`: it saves its own text on its own schedule, which could
+  overwrite a newer file. Each view owns its session and mount, so two open maps share nothing.
+  Routing (`viewSwitch.ts`, pure decision + per-leaf `MarkdownChoices`; wired in `main.ts`): `WorkspaceLeaf.setViewState`
+  is wrapped (the Kanban/Excalidraw approach) so a `markdown` request for a note whose text passes `isMindmapNote`
+  opens the map view instead, unless the user chose "Open as Markdown" for that note in that leaf. Detection by
+  file text, not by name or metadata cache, so there is one rule and no indexing lag.
+  Node clicks open the first `[[link]]` of the item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
+  `bundledFonts.ts` inlines the vendored Kalam (esbuild `binary` loader) behind the library's `fontFetcher` seam
+  (`fontBytes.ts`, rejects any URL that is not bundled), so the plugin never fetches from a CDN.
 - Obsidian E2E (`npm run test:e2e:obsidian`, `e2e/*.e2e.ts`): `scripts/run-e2e.sh` provisions a pinned Obsidian
   (`scripts/setup-obsidian-bin.sh`, Linux download into `.tmp/obsidian-e2e/bin/`, or `OBSIDIAN_PATH`), seeds
   `.dev-vault/` with the built plugin, then `e2e/obsidianHarness.ts` spawns Obsidian on a throwaway copy of the vault
   with an isolated `--user-data-dir`, attaches over CDP (not `_electron.launch`), seeds the window size, enables the
-  plugin at runtime and exposes `openFile` / `runCommand` / `hasCommand` / `relaunch`. The mechanics are documented in
-  the harness; keep them. Specs never import plugin modules that import `obsidian`. Key journeys only, no look
+  plugin at runtime, pins the Obsidian settings the journeys rely on (`alwaysUpdateLinks`) and exposes `openFile` /
+  `runCommand` / `hasCommand` / `relaunch`. The mechanics are documented in the harness; keep them. The map has no DOM,
+  so specs read it through the active view's `mapHandle` (the library handle). Specs never import plugin modules that import `obsidian`. Key journeys only, no look
   assertions; one Obsidian per spec file, serial.
 
