@@ -21,6 +21,7 @@ export function MapControls({ api, onResetMap, onLoadLargeMap, lastNodeClick }: 
         <li>Click a node to highlight it; the host is told which node and which keys were held.</li>
         <li>Hover a node, then click its <kbd>+</kbd> to add a child.</li>
         <li>Double-click a node to rename it.</li>
+        <li>Right-click a node to delete it (with its children).</li>
         <li>Drag a node onto another node to make it a child there (you are asked first); drop it on empty space to just reposition it.</li>
         <li>Drag the background to pan, scroll to zoom.</li>
       </ul>
