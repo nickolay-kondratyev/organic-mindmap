@@ -1,15 +1,16 @@
 ---
 id: nid_89ap39gl425o98g5qnhkuszdl_e
 title: "Library: right-click hook on nodes (onNodeContextMenu)"
-status: open
+status: in_progress
 deps: [nid_b83apppr45lbst30ia592ohg0_e]
 links: []
 created_iso: 2026-10-26T22:25:00Z
-status_updated_iso: 2026-10-26T22:25:00Z
+status_updated_iso: 2026-10-26T22:39:25Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
 parent: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-89ap39gl
 tags: [obsidian-mindmap-file]
 ---
 

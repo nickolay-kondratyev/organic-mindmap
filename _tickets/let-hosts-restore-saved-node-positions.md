@@ -1,15 +1,16 @@
 ---
 id: nid_iexvo4oqwq038twvy9od9gm2b_e
 title: "Let hosts restore saved node positions"
-status: open
+status: in_progress
 deps: [nid_b83apppr45lbst30ia592ohg0_e]
 links: []
 created_iso: 2026-10-23T01:11:55Z
-status_updated_iso: 2026-10-23T01:11:55Z
+status_updated_iso: 2026-10-26T22:39:25Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
 parent: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-iexvo4oq
 tags: [mindmap-v1, obsidian-mindmap-file]
 ---
 

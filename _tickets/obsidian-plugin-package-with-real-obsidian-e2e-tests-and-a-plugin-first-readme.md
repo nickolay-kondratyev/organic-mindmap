@@ -1,16 +1,17 @@
 ---
 id: nid_eqq17z13ui62faww955vkjdjp_e
 title: "Obsidian plugin package with real-Obsidian E2E tests and a plugin-first README"
-status: open
+status: in_progress
 deps: [nid_b83apppr45lbst30ia592ohg0_e]
 links: []
 created_iso: 2026-10-26T22:25:00Z
-status_updated_iso: 2026-10-26T22:25:00Z
+status_updated_iso: 2026-10-26T22:39:25Z
 type: task
 priority: 1
 assignee: CC_WITH-nickolaykondratyev
 parent: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
 profile: higher
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-eqq17z13
 tags: [obsidian-mindmap-file]
 ---
 
