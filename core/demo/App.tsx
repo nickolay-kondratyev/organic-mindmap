@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import { SettingsPersistence, type LabelFontStatus, type NodeClickEvent } from 'organic-mindmap';
+import { SettingsPersistence, type LabelFontStatus, type NodeClickEvent, type NodeContextMenuEvent } from 'organic-mindmap';
 import { Mindmap, type MindmapApi } from 'organic-mindmap/react';
 import { FontStatusBadge } from './FontStatusBadge';
 import { HostSimulationControls } from './host/HostSimulationControls';
+import { NodeContextMenu } from './host/NodeContextMenu';
 import { useDemoHost } from './host/demoHost';
 import { describeNodeClick } from './host/nodeClickReadout';
 // WHY test-support: the same generator as `npm run bench`, so the demo's big map is the benched map.
@@ -24,6 +25,12 @@ export function App() {
   const { config, updateConfig } = usePersistedConfig(SETTINGS_PERSISTENCE);
   const [fontStatus, setFontStatus] = useState<LabelFontStatus | null>(null);
   const [lastNodeClick, setLastNodeClick] = useState<NodeClickEvent | null>(null);
+  const [contextMenu, setContextMenu] = useState<NodeContextMenuEvent | null>(null);
+  const closeContextMenu = useCallback(() => setContextMenu(null), []);
+  const requestDelete = useCallback((target: NodeContextMenuEvent): string | null => {
+    const result = apiRef.current?.requestEdit({ type: 'delete', nodeId: target.nodeId });
+    return result?.kind === 'refused' ? result.reason : null;
+  }, []);
   const apiRef = useRef<MindmapApi | null>(null);
   const attachApi = useCallback((api: MindmapApi | null) => {
     apiRef.current = api;
@@ -48,7 +55,9 @@ export function App() {
             setLastNodeClick(event);
             apiRef.current?.setHighlightedNode(event.nodeId);
           }}
+          onNodeContextMenu={setContextMenu}
         />
+        <NodeContextMenu target={contextMenu} onDelete={requestDelete} onClose={closeContextMenu} />
         <FontStatusBadge status={fontStatus} />
       </main>
       <aside className="runner__panel" aria-label="Demo controls">
