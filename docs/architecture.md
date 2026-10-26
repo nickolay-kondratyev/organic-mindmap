@@ -253,7 +253,8 @@ page and loads none of the runner code or CSS.
   (`obsidian` is a types-only package outside the app).
 - `src/mindmapNote/` is the mindmap note format (`next-steps-prior-to-obsidian.md` "Phase 1a"), text in, text out:
   `isMindmapNote`, `readMindmapNote` (note -> `MindmapNote`: nodes, saved parent offsets, or a plain-language
-  problem), `MindmapNote.applyEdit` / `setPosition` (new note text, changing only the touched lines), and
+  problem), `MindmapNote.applyEdit` / `setPositions` (new note text, changing only the touched lines; `setPositions` writes
+  the whole offsets set the map reports and drops ids not in the list), and
   `newMindmapNoteText`. It parses the text itself (WHY-NOT the metadata cache: it lags behind typing and is missing
   in unit tests). Ids generated for items without a block id only exist in that read and reach the file with the
   next write, so writes always go through the `MindmapNote` the map was drawn from.
@@ -262,7 +263,13 @@ page and loads none of the runner code or CSS.
   file, and answers `onEditRequest` through `MindmapNoteSession` (`noteSession.ts`, pure): one `vault.process`
   per edit that applies `MindmapNote.applyEdit` only when the file still holds the text the map was drawn from,
   else reloads and refuses with `STALE_EDIT_REASON` (generated ids resolve only within one read; a stale write could
-  drop what was typed meanwhile). WHY-NOT `TextFileView`: it saves its own text on its own schedule, which could
+  drop what was typed meanwhile). Session writes run one after another, so a drop saved while an edit is still
+  writing checks against that edit's text. Saved positions: the map mounts with the note's offsets
+  (`nodeOffsets`), every `onNodeOffsetsChange` goes through the same stale-checked write (`savePositions`), and a
+  change from outside the map also resets the map's offsets to the note's. Delete: `onNodeContextMenu` opens an
+  Obsidian `Menu` whose "Delete" calls `requestEdit` (the library refuses the root up front; the view shows the
+  reason as a `Notice`); a confirmed delete shows a `Notice` with "Undo", which restores the text from before the
+  delete only while the file still holds the text the delete left (`MindmapNoteSession.undo`). WHY-NOT `TextFileView`: it saves its own text on its own schedule, which could
   overwrite a newer file. Each view owns its session and mount, so two open maps share nothing.
   Routing (`viewSwitch.ts`, pure decision + per-leaf `MarkdownChoices`; wired in `main.ts`): `WorkspaceLeaf.setViewState`
   is wrapped (the Kanban/Excalidraw approach) so a `markdown` request for a note whose text passes `isMindmapNote`
