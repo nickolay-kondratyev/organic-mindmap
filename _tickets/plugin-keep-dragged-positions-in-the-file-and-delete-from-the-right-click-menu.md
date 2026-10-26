@@ -31,6 +31,10 @@ be deleted from Obsidian's right-click menu.
   `nid_89ap39gl425o98g5qnhkuszdl_e`, both in `core/src/core/mount.ts`.
 - View and format module: `obsidian-plugin/` (from `nid_lmtjqrjec483zha67vaaeydez_e`,
   `nid_uevv14z32jm6npvl0gwef6kpy_e`).
+- Library API (merged): `nodeOffsets` / `onNodeOffsetsChange` report the **whole** offsets set after every drop and
+  after a confirmed reparent (which clears the moved branch's offsets). Write that set as-is through the format
+  module; the format module's map edits leave the layout block alone, so a moved or deleted node's old entry stays
+  until this write. The reported set may hold ids no longer in the note: drop them when writing.
 
 ## Non-goals
 - Saving pan/zoom or collapsed state; rename/reveal entries in the menu.
