@@ -1,17 +1,17 @@
 ---
+closed_iso: 2026-10-26T23:23:10Z
 id: nid_lmtjqrjec483zha67vaaeydez_e
 title: "Plugin: open mindmap notes as a map and save add, rename and move"
-status: in_progress
+status: closed
 deps: [nid_eqq17z13ui62faww955vkjdjp_e, nid_uevv14z32jm6npvl0gwef6kpy_e]
 links: []
 created_iso: 2026-10-26T22:25:00Z
-status_updated_iso: 2026-10-26T23:04:26Z
+status_updated_iso: 2026-10-26T23:23:10Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
 parent: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
 profile: higher
-pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-lmtjqrje
 tags: [obsidian-mindmap-file]
 ---
 
