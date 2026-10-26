@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Runs the demo runner (Vite dev server). Port: PORT env var (default 5173).
+# Runs the library demo runner (Vite dev server in core/). Port: PORT env var (default 5173).
 # Extra args are passed to vite, e.g. `./run.sh --open` or `./run.sh --host`.
 set -euo pipefail
 
+# Repo root: the npm workspace root that owns node_modules and the lockfile.
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
 # Install deps on a fresh clone, or when the lockfile changed since the last install.

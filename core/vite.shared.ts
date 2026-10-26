@@ -1,9 +1,9 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO_ROOT = path.dirname(fileURLToPath(import.meta.url));
+const PACKAGE_ROOT = path.dirname(fileURLToPath(import.meta.url));
 
-export const DEMO_ROOT = path.join(REPO_ROOT, 'demo');
+export const DEMO_ROOT = path.join(PACKAGE_ROOT, 'demo');
 
 /** Dev server port; override with `PORT=... npm run dev` so parallel checkouts do not collide. */
 export const DEV_PORT = portFromEnv('PORT', 5173);
@@ -15,8 +15,8 @@ export const PREVIEW_PORT = portFromEnv('E2E_PORT', 4173);
  * so they can only use the public API (spec D1). Longer alias first so `/react` is not swallowed by the bare name.
  */
 export const SOURCE_ALIASES = [
-  { find: 'natural-mindmap/react', replacement: path.join(REPO_ROOT, 'src/react/index.ts') },
-  { find: 'natural-mindmap', replacement: path.join(REPO_ROOT, 'src/index.ts') },
+  { find: 'natural-mindmap/react', replacement: path.join(PACKAGE_ROOT, 'src/react/index.ts') },
+  { find: 'natural-mindmap', replacement: path.join(PACKAGE_ROOT, 'src/index.ts') },
 ];
 
 function portFromEnv(name: string, fallback: number): number {
