@@ -5,7 +5,7 @@
 npm workspaces monorepo, two packages, one dependency direction:
 
 ```
-obsidian-plugin/  (private; Obsidian plugin, builds the installable folder dist/)
+obsidian-plugin/  (private; Obsidian plugin, bundles to main.js at the repo root = plugin folder)
       |  imports only `organic-mindmap` (the public entry; `coreAlias.ts` resolves it to core/src)
       v
 core/             (package `organic-mindmap`: library, demo, tests; never imports `obsidian`)

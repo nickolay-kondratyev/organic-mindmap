@@ -8,6 +8,9 @@ test-results/
 playwright-report/
 dist-demo/
 coverage/
-# Obsidian plugin: the built plugin folder is obsidian-plugin/dist/ (covered by dist/ above); the local dev vault
-# is seeded by obsidian-plugin/scripts/setup-dev-vault.sh.
+# Obsidian plugin: the repo root is the plugin folder. main.js is the build output; data.json is what Obsidian
+# saves for the plugin when a vault links this folder. The local dev vault is seeded by
+# obsidian-plugin/scripts/setup-dev-vault.sh.
+/main.js
+/data.json
 .dev-vault/
