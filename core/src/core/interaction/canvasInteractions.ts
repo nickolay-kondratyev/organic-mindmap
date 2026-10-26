@@ -22,6 +22,7 @@ import { InlineLabelEditor, type LabelEditorPlacement } from './inlineLabelEdito
 import { addDraftRequest, DRAFT_NODE_ID, isTransient, LocalEditState } from './localEditState';
 import { NoticeBanner } from './noticeBanner';
 import { nodeClickEvent, type ModifierKeys, type NodeClickEvent } from './nodeClickEvent';
+import { contextMenuNodeId, type NodeContextMenuEvent } from './nodeContextMenuEvent';
 import { clickedNodeId, PointerGesture, type PressTarget } from './pointerGesture';
 import { ReparentConfirmation } from './reparentConfirmation';
 import { ReparentDialog } from './reparentDialog';
@@ -40,6 +41,8 @@ export interface InteractionHost {
   requestRepaint(): void;
   onNodeReposition(event: NodeRepositionEvent): void;
   onNodeClick(event: NodeClickEvent): void;
+  /** Set means the host shows its own menu, so a right-click on a node suppresses the browser's. */
+  readonly onNodeContextMenu?: (event: NodeContextMenuEvent) => void;
   /** The user changed a setting from inside the map (e.g. "Don't ask again"); the mount applies and reports it. */
   changeConfig(config: MindmapConfig): void;
 }
@@ -67,7 +70,7 @@ const CURSOR = { idle: '', grab: 'grab', grabbing: 'grabbing', button: 'pointer'
 /**
  * Canvas pointer interactions (spec I1-I5): pan/zoom, drag to reposition (push-apart on drop) or to reparent
  * (drop onto a node, after a confirmation the user can turn off), hover "+" button, double-click inline rename (both
- * can be switched off in config), node clicks reported via `onNodeClick`, the host's highlight, plus the pending /
+ * can be switched off in config), node clicks reported via `onNodeClick`, node right-clicks via `onNodeContextMenu`, the host's highlight, plus the pending /
  * rejected feedback.
  * Structural edits only ever go through `EditSession` (the host confirms); repositions are library-local
  * overrides reported via `onNodeReposition`. This class is the DOM wiring; the decisions live in DOM-free units
@@ -115,6 +118,7 @@ export class CanvasInteractions {
     this.listen('lostpointercapture', () => this.cancelGesture());
     this.listen('pointerleave', () => this.setHover(null, null));
     this.listen('dblclick', (event) => this.onDoubleClick(event));
+    this.listen('contextmenu', (event) => this.onContextMenu(event));
     // Not passive: the page must not scroll while the wheel zooms the map.
     this.listen('wheel', (event) => this.onWheel(event), { passive: false });
   }
@@ -232,6 +236,17 @@ export class CanvasInteractions {
     if (this.painted === null || this.askedDrop !== null) return;
     const nodeId = nodeAt(this.painted, this.host.view.screenToScene(this.canvasPoint(event)), this.host.extensions().nodeShape);
     if (nodeId !== null && !isTransient(nodeId)) this.openRename(nodeId);
+  }
+
+  /** Only a right-click on a real node goes to the host's hook; anything else keeps the browser's own menu. */
+  private onContextMenu(event: MouseEvent): void {
+    const report = this.host.onNodeContextMenu;
+    if (report === undefined || this.painted === null || this.askedDrop !== null) return;
+    const scenePoint = this.host.view.screenToScene(this.canvasPoint(event));
+    const nodeId = contextMenuNodeId(this.painted, scenePoint, this.host.extensions().nodeShape);
+    if (nodeId === null) return;
+    event.preventDefault();
+    report({ nodeId, clientPoint: { x: event.clientX, y: event.clientY } });
   }
 
   private onWheel(event: WheelEvent): void {
