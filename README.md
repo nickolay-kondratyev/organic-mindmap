@@ -25,7 +25,12 @@ organic-mindmap: 1
   "..." menu has "Open as Markdown"; command "Toggle mindmap / Markdown view" switches either way.
 - **Edit on the map:** hover a node for "+" (add child), double-click to rename, drag onto another node to move it
   there. Every change is written to the note at once; edits typed in a Markdown tab (or synced in) show up on the
-  open map. Delete and saved positions are not in yet.
+  open map.
+- **Positions:** drag a node to empty space and it stays there: the spot is saved in the note (as an offset from its
+  parent, in a hidden `%%` layout block) and comes back when you reopen the note. Nodes you never dragged keep the
+  automatic layout.
+- **Delete:** right-click a node > "Delete" removes it and its nested items from the note. The notice that follows
+  has "Undo", which puts the text back as long as the note has not changed since. The root cannot be deleted.
 - **Links:** an item that contains a `[[link]]` shows the link's text and opens it on click (Ctrl/Cmd-click: new
   tab). Since the mindmap is a normal note, Obsidian keeps its links updated when a linked note is renamed.
 - A note the plugin cannot read as a map says why and offers "Open as Markdown".

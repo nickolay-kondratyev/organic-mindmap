@@ -1,4 +1,4 @@
-import { EDIT_PROBLEM, type EditRequest, type NodeOffset } from 'organic-mindmap';
+import { EDIT_PROBLEM, type EditRequest } from 'organic-mindmap';
 import type { MindmapNote } from './mindmapNote';
 import { noteText, readNote } from './testSupport';
 
@@ -12,12 +12,6 @@ function written(note: MindmapNote, request: EditRequest): string {
 function refusal(note: MindmapNote, request: EditRequest): string | null {
   const result = note.applyEdit(request);
   return result.kind === 'refused' ? result.reason : null;
-}
-
-function positionWritten(note: MindmapNote, nodeId: string, offset: NodeOffset): string {
-  const result = note.setPosition(nodeId, offset);
-  if (result.kind !== 'written') throw new Error(`Expected a write, got refusal=[${result.reason}]`);
-  return result.text;
 }
 
 const FRONTMATTER = ['---', 'title: Phoenix', 'organic-mindmap: 1', 'aliases: [p]', '---'];
@@ -179,8 +173,8 @@ describe('MindmapNote edits', () => {
       expect(written(note, { type: 'add', parentId: 'r', text: 'b' })).toBe('- root ^r\r\n\t- a ^a\r\n\t- b ^gen1\r\n');
     });
 
-    it('WHEN saving a position THEN the new layout block uses CRLF too', () => {
-      expect(positionWritten(readNote('- root ^r\r\n\t- a ^a\r\n'), 'a', { dx: 1, dy: 2 })).toBe(
+    it('WHEN saving positions THEN the new layout block uses CRLF too', () => {
+      expect(readNote('- root ^r\r\n\t- a ^a\r\n').setPositions({ a: { dx: 1, dy: 2 } })).toBe(
         '- root ^r\r\n\t- a ^a\r\n\r\n%%\r\n```organic-mindmap-layout\r\n{\r\n  "a": {"dx": 1, "dy": 2}\r\n}\r\n```\r\n%%\r\n',
       );
     });
@@ -226,13 +220,13 @@ describe('MindmapNote edits', () => {
   });
 });
 
-describe('MindmapNote.setPosition', () => {
+describe('MindmapNote.setPositions', () => {
   describe('GIVEN a note without a layout block and text after the list', () => {
     const text = noteText('- root ^r', '\t- a ^a', 'After the list.');
     const note = readNote(text);
 
-    it('WHEN saving a position THEN a hidden layout block is added right after the list', () => {
-      expect(positionWritten(note, 'a', { dx: 120, dy: -40 })).toBe(
+    it('WHEN saving positions THEN a hidden layout block is added right after the list', () => {
+      expect(note.setPositions({ a: { dx: 120, dy: -40 } })).toBe(
         noteText(
           '- root ^r',
           '\t- a ^a',
@@ -250,8 +244,12 @@ describe('MindmapNote.setPosition', () => {
       );
     });
 
-    it('WHEN the written note is read again THEN the position is there', () => {
-      expect(readNote(positionWritten(note, 'a', { dx: 120, dy: -40 })).positions).toEqual({ a: { dx: 120, dy: -40 } });
+    it('WHEN the written note is read again THEN the positions are there', () => {
+      expect(readNote(note.setPositions({ a: { dx: 120, dy: -40 } })).positions).toEqual({ a: { dx: 120, dy: -40 } });
+    });
+
+    it('WHEN saving no positions THEN the text is unchanged (no empty block is added)', () => {
+      expect(note.setPositions({})).toBe(text);
     });
   });
 
@@ -270,8 +268,8 @@ describe('MindmapNote.setPosition', () => {
     );
     const note = readNote(text);
 
-    it('WHEN saving a position THEN the block is rewritten sorted and without the unknown id', () => {
-      expect(positionWritten(note, 'a', { dx: 3, dy: 4 })).toBe(
+    it('WHEN saving the whole set THEN the block holds exactly that set, sorted', () => {
+      expect(note.setPositions({ b: { dx: 1, dy: 2 }, a: { dx: 3, dy: 4 } })).toBe(
         text.replace(
           '{"gone": {"dx": 5, "dy": 5}, "b": {"dx": 1, "dy": 2}}',
           '{\n  "a": {"dx": 3, "dy": 4},\n  "b": {"dx": 1, "dy": 2}\n}',
@@ -279,13 +277,21 @@ describe('MindmapNote.setPosition', () => {
       );
     });
 
-    it('WHEN saving the same positions twice THEN the second write changes nothing', () => {
-      const first = positionWritten(note, 'a', { dx: 3, dy: 4 });
-      expect(positionWritten(readNote(first), 'a', { dx: 3, dy: 4 })).toBe(first);
+    it('WHEN the set leaves out a saved id THEN that id is dropped from the block', () => {
+      expect(readNote(note.setPositions({ a: { dx: 3, dy: 4 } })).positions).toEqual({ a: { dx: 3, dy: 4 } });
     });
 
-    it('WHEN saving a position for a node not in the note THEN it is refused', () => {
-      expect(note.setPosition('gone', { dx: 0, dy: 0 })).toEqual({ kind: 'refused', reason: EDIT_PROBLEM.unknownNode });
+    it('WHEN the set holds an id not in the note THEN it is not written', () => {
+      expect(note.setPositions({ a: { dx: 3, dy: 4 }, deleted: { dx: 9, dy: 9 } })).not.toContain('deleted');
+    });
+
+    it('WHEN saving an empty set THEN the block stays and holds no positions', () => {
+      expect(note.setPositions({})).toBe(text.replace('{"gone": {"dx": 5, "dy": 5}, "b": {"dx": 1, "dy": 2}}', '{}'));
+    });
+
+    it('WHEN saving the same positions twice THEN the second write changes nothing', () => {
+      const first = note.setPositions({ a: { dx: 3, dy: 4 } });
+      expect(readNote(first).setPositions({ a: { dx: 3, dy: 4 } })).toBe(first);
     });
   });
 
@@ -293,8 +299,8 @@ describe('MindmapNote.setPosition', () => {
     const text = noteText('- root ^r', '%%', '```organic-mindmap-layout', '{oops', '```', '%%');
     const note = readNote(text);
 
-    it('WHEN saving a position THEN the broken JSON is replaced', () => {
-      expect(positionWritten(note, 'r', { dx: 0, dy: 0 })).toBe(text.replace('{oops', '{\n  "r": {"dx": 0, "dy": 0}\n}'));
+    it('WHEN saving positions THEN the broken JSON is replaced', () => {
+      expect(note.setPositions({ r: { dx: 0, dy: 0 } })).toBe(text.replace('{oops', '{\n  "r": {"dx": 0, "dy": 0}\n}'));
     });
   });
 
@@ -302,7 +308,7 @@ describe('MindmapNote.setPosition', () => {
     const note = readNote(noteText('- root ^r', '\t- a'));
 
     it('WHEN saving its position THEN its generated id is written to the item and the layout', () => {
-      expect(positionWritten(note, 'gen1', { dx: 1, dy: 1 })).toBe(
+      expect(note.setPositions({ gen1: { dx: 1, dy: 1 } })).toBe(
         noteText('- root ^r', '\t- a ^gen1', '', '%%', '```organic-mindmap-layout', '{', '  "gen1": {"dx": 1, "dy": 1}', '}', '```', '%%'),
       );
     });

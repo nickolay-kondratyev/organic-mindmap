@@ -1,10 +1,8 @@
 import {
-  EDIT_PROBLEM,
   findEditProblem,
   type EditRequest,
   type MindmapData,
   type NodeId,
-  type NodeOffset,
   type NodeOffsets,
 } from 'organic-mindmap';
 import { claimUniqueBlockId, type BlockIdSource } from './blockId';
@@ -129,23 +127,21 @@ export class MindmapNote {
   }
 
   /**
-   * The note text with `offset` saved for `nodeId`. Rewrites the whole layout block deterministically and drops
-   * saved ids that are no longer in the list; creates the block (inside `%%`) after the list when missing.
+   * The note text with `offsets` as the whole saved layout (e.g. what the map reports after a drop): rewrites the
+   * layout block deterministically, dropping ids that are not in the list, and creates the block (inside `%%`)
+   * after the list when missing. With nothing to save and no block yet, no block is added.
    */
-  setPosition(nodeId: NodeId, offset: NodeOffset): NoteWriteResult {
-    if (!this.items.has(nodeId)) return { kind: 'refused', reason: EDIT_PROBLEM.unknownNode };
-    const offsets = new Map(Object.entries(this.positions));
-    offsets.set(nodeId, offset);
-    const jsonLines = formatLayoutJsonLines(offsets);
+  setPositions(offsets: NodeOffsets): string {
+    const known = new Map(Object.entries(offsets).filter(([id]) => this.items.has(id)));
     const lines = this.linesWithAllBlockIds();
     const layout = findLayoutBlock(lines.contents(), this.bodyStart);
     if (layout === null) {
-      this.insertLayoutBlock(lines, jsonLines);
+      if (known.size > 0) this.insertLayoutBlock(lines, formatLayoutJsonLines(known));
     } else {
       lines.remove(layout.openLine + 1, layout.closeLine - 1);
-      lines.insertAfter(layout.openLine, jsonLines);
+      lines.insertAfter(layout.openLine, formatLayoutJsonLines(known));
     }
-    return { kind: 'written', text: lines.toText() };
+    return lines.toText();
   }
 
   private rename(lines: NoteLines, nodeId: NodeId, text: string): void {
