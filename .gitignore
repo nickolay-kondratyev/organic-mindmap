@@ -1,3 +1,4 @@
+# Unanchored on purpose: build and test outputs land inside each workspace package (e.g. core/dist/).
 node_modules/
 .worktree/
 .out/

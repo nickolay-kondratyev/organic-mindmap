@@ -1,7 +1,7 @@
 # Next steps before the Obsidian integration
 
-Status: proposal (2026-10-23, updated 2026-10-26). Decided so far: desktop first; the first launch is the heading
-map of one note, with move (library side done in v0.2.0); the **mindmap file** comes next, ahead of the other
+Status: proposal (2026-10-23, updated 2026-10-26). Decided so far: desktop first; the **mindmap file** comes first
+(human, 2026-10-26), then the heading map of one note with move (library side done in v0.2.0), ahead of the other
 heading edits and the folder map. Open questions are under "Decisions needed" at the end.
 
 ## TL;DR
@@ -14,7 +14,7 @@ The v1 library draws a hand-sized map well. Three things block real Obsidian use
 3. **Missing host hooks.** No "node clicked" event (open the note / jump to the heading), no right-click
    menu hook, no per-node rules (a file cannot have children), and no way to restore saved positions.
 
-Order: fix speed -> host hooks -> **first launch: heading map of the active note, with move** -> **mindmap file**
+Order: fix speed -> host hooks -> **first launch: mindmap file** -> **heading map of the active note, with move**
 -> collapse -> other heading edits -> folder/vault map. Collapse only blocks the folder map; for one note it is a nice-to-have.
 
 ## Measured: where the time goes
@@ -30,7 +30,7 @@ Order: fix speed -> host hooks -> **first launch: heading map of the active note
 | 2,000 | 23,494 ms |
 
 Per stage at 1,000 nodes: tidy-tree 2 ms, bow + jitter 0 ms, collision 29 ms, **branch routing 5,885 ms**.
-The cost was almost all in `src/core/geometry/branchRouting.ts` (O(branches² x samples²) for limb separation),
+The cost was almost all in `core/src/core/geometry/branchRouting.ts` (O(branches² x samples²) for limb separation),
 and `CanvasInteractions.sceneToPaint` rebuilt the scene every paint.
 
 Done (ticket `nid_t5ydqj1ar6fdjksdps0sk2e0g_e`): routing skips pairs whose boxes cannot touch (same shapes), and the
@@ -40,9 +40,9 @@ Good news: tidy tree and collision are cheap enough up to ~1,000 nodes, and buil
 the flat data is cheap. **Cost follows the number of visible nodes, not the size of the data**, so collapse
 plus fast routing covers large vaults without lazy loading.
 
-## Library work for the first launch (heading map + move)
+## Library work for the heading map launch (+ move)
 
-Only this blocks the first launch. Everything else in Phase 0 is for the folder map or later.
+Only this blocks the heading map launch. Everything else in Phase 0 is for the folder map or later.
 
 | # | Item | Why the heading launch needs it |
 |---|---|---|
@@ -160,7 +160,7 @@ exists; that time is now. Proposal to keep the library simple:
 
 - "Generate large map" (N nodes, fan-out, depth): for speed, collapse, and the "+N more" node.
 - "Paste Markdown": turns headings into a map, so heading mode can be felt and tuned in the browser.
-  Small throwaway parser in `demo/`; the plugin uses Obsidian's own heading list instead (duplication is fine,
+  Small throwaway parser in `core/demo/`; the plugin uses Obsidian's own heading list instead (duplication is fine,
   it is low-risk glue).
 
 ### 0.8 Packaging
@@ -172,7 +172,7 @@ exists; that time is now. Proposal to keep the library simple:
 
 ## Phase 1a: plugin, mindmap file
 
-Plugin-side (the `plugin` package in this repo, see CLAUDE.md), listed here so the library API is shaped for it. A mindmap is a normal Markdown note, so
+Plugin-side (`obsidian-plugin/` in this repo, see CLAUDE.md), listed here so the library API is shaped for it. A mindmap is a normal Markdown note, so
 Obsidian keeps links updated on rename, and backlinks, graph and search see them:
 
 ````markdown
@@ -203,14 +203,14 @@ organic-mindmap: 1
 
 ## Phase 1: plugin, heading map of one note
 
-Plugin-side (the `plugin` package in this repo, see CLAUDE.md), listed here so the library API is shaped for it.
+Plugin-side (`obsidian-plugin/` in this repo, see CLAUDE.md), listed here so the library API is shaped for it.
 
 **Mapping.** Root = the file name (or the single H1, if the note has exactly one). Each heading's parent is
 the nearest heading above it with a lower level, so skipped levels (H1 -> H3) just attach to the H1. Text
 before the first heading is ignored. Source: `metadataCache.getFileCache(file).headings` (level, text,
 position), refreshed on the cache's `changed` event, debounced.
 
-**First launch (decided): navigate + move.** Click jumps to the heading, the map follows the active note, the
+**Heading map launch (decided): navigate + move.** Click jumps to the heading, the map follows the active note, the
 heading under the cursor is highlighted, and dragging a node onto another heading moves that section in the
 Markdown.
 
@@ -235,7 +235,7 @@ and shows it as pending until the plugin confirms):
 - **Not included: reordering siblings** (moving a heading up or down under the same parent). The library's
   `move` has no position yet. Users will likely want this soon after move ships (see decision 9).
 
-**Other edits come after the first launch**, one at a time:
+**Other edits come after the heading map launch**, one at a time:
 
 | Map edit | In the note |
 |---|---|
@@ -269,7 +269,7 @@ Until each one ships, the plugin turns it off with the per-node rules (0.2), so 
 
 ## Decisions needed (with my recommendation)
 
-1. ~~Read-only heading map first?~~ **Decided:** the first launch is the heading map with move.
+1. ~~Read-only heading map first?~~ **Decided:** the heading map launches with move (it now comes after the mindmap file, decision 12).
 2. **Click behavior.** Recommend: click = open/jump, double-click = rename, right-click = Obsidian menu.
 3. ~~Mobile / touch in the first release?~~ **Decided:** desktop first. Pinch-zoom comes later.
 4. ~~Saved positions relative to the parent (not absolute)?~~ **Decided (2026-10-26):** yes, offset from the parent.
@@ -277,10 +277,10 @@ Until each one ships, the plugin turns it off with the per-node rules (0.2), so 
 6. **How the plugin gets the library.** Recommend a git dependency on tags for now, npm later.
 7. **Settings screen** (`nid_kkm4447dku0vlz0ry1zwr2v8k_e`): recommend (b).
 8. **First-level side order for headings:** recommend adding the "clockwise" option and using it in heading mode.
-9. **Reorder siblings in the first launch?** Recommend no: ship move (change parent) first, then add reorder
+9. **Reorder siblings in the heading map launch?** Recommend no: ship move (change parent) first, then add reorder
    as the next step (an optional position on `move`, plus dropping between two siblings).
 10. ~~Emoji / non-Latin headings?~~ **Decided:** headings may use both. If the label font lacks a character, hide
-    that label on its branch, and show the node label with fallback fonts. Part of the first launch.
+    that label on its branch, and show the node label with fallback fonts. Part of the heading map launch.
 11. ~~Mindmap file format?~~ **Decided (2026-10-26):** a Markdown note as in "Phase 1a" (list + block ids +
     hidden layout block), flagged by `organic-mindmap: 1`. Not a custom-id scheme.
-12. ~~When does the mindmap file come?~~ **Decided (2026-10-26):** right after the heading map launch.
+12. ~~When does the mindmap file come?~~ **Decided (2026-10-26, human):** first, before the heading map of one note.

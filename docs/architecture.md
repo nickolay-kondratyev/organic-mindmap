@@ -1,10 +1,11 @@
 # Architecture
 
-One npm package, two entry points:
+The repo is an npm workspaces monorepo; the library is the package `organic-mindmap` in `core/`. Paths in this doc are
+relative to `core/`. The library has two entry points:
 
-- `natural-mindmap` (`src/index.ts` -> `src/core/`): framework-free TypeScript. **Never imports React**
+- `organic-mindmap` (`src/index.ts` -> `src/core/`): framework-free TypeScript. **Never imports React**
   (guarded by `src/core/noReactImports.test.ts`).
-- `natural-mindmap/react` (`src/react/`): `<Mindmap>` component that mounts the core onto a canvas and
+- `organic-mindmap/react` (`src/react/`): `<Mindmap>` component that mounts the core onto a canvas and
   syncs size / device pixel ratio with a `ResizeObserver`. It mounts in a layout effect before attaching its ref, so a
   non-null ref (`MindmapApi`) is always usable (`e2e/mindmapRef.spec.ts`).
 
@@ -216,7 +217,7 @@ page and loads none of the runner code or CSS.
   page helpers live in `e2e/demoPage.ts`. Settings controls carry `data-testid="setting:<dotted.config.path>"`.
 - Acceptance screenshot (spec Q3): `e2e/reference-view.spec.ts` shoots `demo/reference.html`, a canvas-only
   page (zero config, reference data, no React) at a fixed 1400x900 / DPR 1 viewport; the baseline lives in
-  `e2e/reference-view.spec.ts-snapshots/`. It is the only look assertion in the repo; re-baseline with
+  `e2e/reference-view.spec.ts-snapshots/`. It is the only look assertion in the repo; re-baseline (from `core/`) with
   `npx playwright test e2e/reference-view.spec.ts --update-snapshots` after an intended visual change.
 - Vendored Kalam (`assets/fonts/kalam/`, SIL OFL) is the same file as the default Fontsource URL; unit tests
   read it via `test-support/vendoredKalam.ts`, so no test hits the network.

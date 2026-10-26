@@ -1,4 +1,4 @@
-# natural-mindmap
+# organic-mindmap
 
 Mindmap library for the web that feels hand-drawn: framework-free TypeScript core plus a thin React wrapper.
 Requirements live in [spec.md](spec.md); architecture in [docs/architecture.md](docs/architecture.md).
@@ -6,8 +6,8 @@ Requirements live in [spec.md](spec.md); architecture in [docs/architecture.md](
 ## Use
 
 ```tsx
-import { REFERENCE_DATA } from 'natural-mindmap';
-import { Mindmap } from 'natural-mindmap/react';
+import { REFERENCE_DATA } from 'organic-mindmap';
+import { Mindmap } from 'organic-mindmap/react';
 
 <Mindmap data={REFERENCE_DATA} config={{ theme: { color: { background: '#101418' } } }} />;
 ```
@@ -23,7 +23,7 @@ Navigation hooks: `onNodeClick({ nodeId, ctrlKey, metaKey, altKey, shiftKey })` 
 `setHighlightedNode(id | null)` rings a node; `centerOnNode(id)` pans to it. `interaction.allowAdd` /
 `allowRename: false` give a move-only map. Heading-friendly options: `layout.sideOrder: 'clockwise'` (document
 order), `text.nodeFit.minFontScale` (long labels end with "…"). Labels with characters the font lacks (emoji, CJK)
-fall back to system fonts on the node. Changes per version: [CHANGELOG.md](CHANGELOG.md).
+fall back to system fonts on the node. Changes per version: [core/CHANGELOG.md](core/CHANGELOG.md).
 
 ## Demo runner
 
@@ -42,6 +42,9 @@ Starts on the Shakespeare reference map with default settings. The side panel ha
   fonts, layout, interaction) and "Reset settings".
 
 ## Develop
+
+npm workspaces monorepo: the library lives in `core/` (package `organic-mindmap`). Run these from the repo root
+(they delegate to `core`) or from inside `core/`.
 
 ```bash
 npm install         # deps + Playwright Chromium (`prepare` script, dev checkouts only)
