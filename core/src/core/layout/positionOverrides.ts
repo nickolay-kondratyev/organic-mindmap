@@ -6,14 +6,55 @@ import { subtreeIds } from './layoutLookups';
 import type { NodePositions } from './layoutTypes';
 
 /**
- * User-chosen node centres (spec I2), keyed by node id, in scene coordinates. Library-local layout state: they
- * survive data updates (ids that no longer exist are ignored) and are reported to the host as events, never
- * written into host data. Iteration order is drop order (oldest first, kept by `withNodeDropped`): when two
- * user-placed nodes overlap, the later drop stays and the earlier one is pushed clear.
+ * Where a user put a node (spec I2), as scene units from its parent's centre. Relative, not absolute, so a saved
+ * position still fits after the auto layout moves the parent (e.g. a node was added elsewhere).
  */
-export type PositionOverrides = ReadonlyMap<NodeId, Point>;
+export interface NodeOffset {
+  readonly dx: number;
+  readonly dy: number;
+}
+
+/**
+ * User-placed nodes by id, in the shape hosts save and hand back as plain JSON, e.g.
+ * `{"n7f3k": {"dx": 120, "dy": -40}}`.
+ * Key order is drop order (oldest first): where two user-placed nodes overlap, the later one stays put.
+ * Ceiling: JS objects list integer-like keys (`"42"`) first, so such ids lose their drop order across a save.
+ */
+export type NodeOffsets = Readonly<Record<NodeId, NodeOffset>>;
+
+/**
+ * Library-local form of `NodeOffsets`: a Map, so drop order holds for every id. They survive data updates (ids that
+ * no longer exist are ignored) and are reported to the host as events, never written into host data. Iteration
+ * order is drop order (kept by `withNodeDropped`).
+ */
+export type PositionOverrides = ReadonlyMap<NodeId, NodeOffset>;
 
 export const NO_POSITION_OVERRIDES: PositionOverrides = new Map();
+
+/** Host-given offsets as overrides; entries without finite `dx`/`dy` are skipped (e.g. from a hand-edited file). */
+export function overridesFromNodeOffsets(offsets: NodeOffsets): PositionOverrides {
+  return new Map(Object.entries(offsets).filter(([, offset]) => isValidOffset(offset)));
+}
+
+/** Overrides in the host's shape, in drop order. */
+export function nodeOffsetsOf(overrides: PositionOverrides): NodeOffsets {
+  return Object.fromEntries(overrides);
+}
+
+function isValidOffset(offset: unknown): offset is NodeOffset {
+  if (typeof offset !== 'object' || offset === null) return false;
+  const { dx, dy } = offset as Partial<Record<keyof NodeOffset, unknown>>;
+  return Number.isFinite(dx) && Number.isFinite(dy);
+}
+
+/** `point` as an offset from `origin`. */
+export function offsetBetween(origin: Point, point: Point): NodeOffset {
+  return { dx: point.x - origin.x, dy: point.y - origin.y };
+}
+
+function pointAt(origin: Point, offset: NodeOffset): Point {
+  return { x: origin.x + offset.dx, y: origin.y + offset.dy };
+}
 
 export interface PositionOverrideInput {
   readonly tree: MindmapTree;
@@ -88,19 +129,26 @@ export function moveSubtree(positions: NodePositions, tree: MindmapTree, move: S
 }
 
 /**
- * Overrides after a node drag that ended away from any drop target (spec I2): the dragged node gets its new
- * centre, and descendants with an override of their own move (or mirror) with it, since the whole subtree
- * travels with the dragged node (else they would snap back, or un-flip).
+ * Overrides after a node drag that ended away from any drop target (spec I2): the dragged node gets `offset` from
+ * its parent. Descendants with an offset of their own travel along as they are relative; when the drop mirrors the
+ * subtree they mirror too (horizontal offset negated), else they would un-flip.
  */
-export function withNodeDropped(overrides: PositionOverrides, tree: MindmapTree, drop: SubtreeMove): PositionOverrides {
+export function withNodeDropped(
+  overrides: PositionOverrides,
+  tree: MindmapTree,
+  drop: SubtreeMove,
+  offset: NodeOffset,
+): PositionOverrides {
   const result = new Map(overrides);
-  for (const id of subtreeIds(tree, drop.nodeId)) {
-    const position = result.get(id);
-    if (position !== undefined) result.set(id, movedPoint(drop, position));
+  if (drop.mirrored) {
+    for (const id of subtreeIds(tree, drop.nodeId)) {
+      const descendant = result.get(id);
+      if (descendant !== undefined) result.set(id, { dx: -descendant.dx, dy: descendant.dy });
+    }
   }
   // Delete first: `Map.set` on an existing key keeps its old slot, but this is now the latest drop.
   result.delete(drop.nodeId);
-  result.set(drop.nodeId, drop.to);
+  result.set(drop.nodeId, offset);
   return result;
 }
 
@@ -110,31 +158,45 @@ export function withoutSubtree(overrides: PositionOverrides, tree: MindmapTree, 
   return new Map([...overrides].filter(([id]) => !dropped.has(id)));
 }
 
+/** Laid-out positions with user offsets applied and the push-apart still to come (see `applyPositionOverrides`). */
+export interface OverriddenPositions {
+  /** Every node at its laid-out spot moved by the user offsets: what offsets are measured from. */
+  readonly placed: NodePositions;
+  /** Final centres, after pushing nodes clear of the user-placed subtrees. */
+  readonly positions: NodePositions;
+}
+
 /**
- * Places every overridden node at its chosen centre, carrying its subtree along (mirrored when the node crossed
- * its parent, see `subtreeMoveTo`; spec I2), then pushes nodes apart
+ * Places every overridden node at its offset from its parent's placed centre, carrying its subtree along (mirrored
+ * when the node crossed its parent, see `subtreeMoveTo`; spec I2), then pushes nodes apart
  * (R23) with the overridden subtrees pinned in drop order: laid-out nodes always yield to them, and where two
  * user-placed subtrees overlap the earlier drop yields, so the latest drop stays exactly where the user put it.
- * Parents are placed before children, so a child with its own override still ends up at it, and decides its own
- * flip against its parent's already-moved centre.
+ * Parents are placed before children, so a child's offset is measured from its parent's already-moved centre, and
+ * decides its own flip against it.
  *
- * Without overrides the input is returned as-is (no extra collision pass), so untouched maps render exactly as
- * the layout pipeline produced them.
+ * Offsets are measured from `placed`, not from the drawn (pushed-apart) centre: the push-apart depends on the
+ * offsets, so measuring from it would move a node each time its parent is pushed.
+ *
+ * Without overrides both are the input as-is (no extra collision pass), so untouched maps render exactly as the
+ * layout pipeline produced them.
  */
-export function applyPositionOverrides(positions: NodePositions, input: PositionOverrideInput): NodePositions {
+export function applyPositionOverrides(positions: NodePositions, input: PositionOverrideInput): OverriddenPositions {
   const { tree, overrides } = input;
-  const known = tree.nodes.filter((node) => overrides.has(node.id) && positions.has(node.id) && node.parentId !== null);
-  if (known.length === 0) return positions;
+  const known = tree.nodes.filter(
+    (node) => overrides.has(node.id) && positions.has(node.id) && node.parentId !== null && positions.has(node.parentId),
+  );
+  if (known.length === 0) return { placed: positions, positions };
 
-  let result = positions;
+  let placed = positions;
   for (const node of [...known].sort((a, b) => tree.depthOf(a.id) - tree.depthOf(b.id))) {
-    const target = overrides.get(node.id) as Point;
-    const move = subtreeMoveTo(result, tree, node.id, target);
-    if (move !== null) result = moveSubtree(result, tree, move);
+    const parent = placed.get(node.parentId as NodeId) as Point;
+    const move = subtreeMoveTo(placed, tree, node.id, pointAt(parent, overrides.get(node.id) as NodeOffset));
+    if (move !== null) placed = moveSubtree(placed, tree, move);
   }
   const knownIds = new Set(known.map((node) => node.id));
   const pinnedGroups = [...overrides.keys()]
     .filter((id) => knownIds.has(id))
     .map((id) => new Set<NodeId>(subtreeIds(tree, id)));
-  return resolveCollisions(result, { tree, sizes: input.sizes, padding: input.padding, pinnedGroups });
+  const pushedApart = resolveCollisions(placed, { tree, sizes: input.sizes, padding: input.padding, pinnedGroups });
+  return { placed, positions: pushedApart };
 }

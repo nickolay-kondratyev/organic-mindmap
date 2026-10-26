@@ -4,7 +4,13 @@ import { PENDING_NODE_ID, type EditSession, type EditStatus } from '../edit/edit
 import type { MindmapExtensions } from '../extensions';
 import { buildBranches } from '../geometry/branchGeometry';
 import { subtreeIds } from '../layout/layoutLookups';
-import { moveSubtree, subtreeMoveBy } from '../layout/positionOverrides';
+import {
+  moveSubtree,
+  nodeOffsetsOf,
+  overridesFromNodeOffsets,
+  subtreeMoveBy,
+  type NodeOffsets,
+} from '../layout/positionOverrides';
 import type { NodeId, Point, Side } from '../model/node';
 import { buildTree, type MindmapTree } from '../model/tree';
 import type { Viewport } from '../render/canvasRenderer';
@@ -39,6 +45,8 @@ export interface InteractionHost {
   cssFontFamily(font: LoadedFont | null): string;
   requestRepaint(): void;
   onNodeReposition(event: NodeRepositionEvent): void;
+  /** Every user-placed node after a change the user made (a drop, a confirmed reparent); see `setNodeOffsets`. */
+  onNodeOffsetsChange(offsets: NodeOffsets): void;
   onNodeClick(event: NodeClickEvent): void;
   /** The user changed a setting from inside the map (e.g. "Don't ask again"); the mount applies and reports it. */
   changeConfig(config: MindmapConfig): void;
@@ -70,8 +78,8 @@ const CURSOR = { idle: '', grab: 'grab', grabbing: 'grabbing', button: 'pointer'
  * can be switched off in config), node clicks reported via `onNodeClick`, the host's highlight, plus the pending /
  * rejected feedback.
  * Structural edits only ever go through `EditSession` (the host confirms); repositions are library-local
- * overrides reported via `onNodeReposition`. This class is the DOM wiring; the decisions live in DOM-free units
- * (`PointerGesture`, `hitTest`, `LocalEditState`, `ReparentConfirmation`).
+ * overrides reported via `onNodeReposition` and `onNodeOffsetsChange`. This class is the DOM wiring; the decisions
+ * live in DOM-free units (`PointerGesture`, `hitTest`, `LocalEditState`, `ReparentConfirmation`).
  *
  * WHY-NOT live push-apart while dragging: the drop target would always be pushed out from under the pointer,
  * making reparenting impossible. Other nodes stay put during the drag and yield once it is dropped.
@@ -101,7 +109,7 @@ export class CanvasInteractions {
     const { canvas } = host;
     this.editor = new InlineLabelEditor(canvas);
     this.notice = new NoticeBanner(canvas, () => host.edits.clearRejection());
-    this.local = new LocalEditState(host.edits);
+    this.local = new LocalEditState(host.edits, (overrides) => host.onNodeOffsetsChange(nodeOffsetsOf(overrides)));
     this.reparentDialog = new ReparentDialog(canvas);
     this.reparent = new ReparentConfirmation({
       config: () => host.config(),
@@ -150,6 +158,12 @@ export class CanvasInteractions {
     this.reparentDialog.place();
     // Keeps the busy ring moving until the host answers.
     if (pendingNodeId !== null) this.host.requestRepaint();
+  }
+
+  /** Replaces the user-placed nodes (offsets from their parents, e.g. saved earlier); unknown ids are ignored. */
+  setNodeOffsets(offsets: NodeOffsets): void {
+    this.local.setOverrides(overridesFromNodeOffsets(offsets));
+    this.host.requestRepaint();
   }
 
   /** An unknown id simply paints no ring (e.g. the host's node is not in the data yet). */

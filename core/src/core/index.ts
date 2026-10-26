@@ -61,6 +61,7 @@ export {
 } from './edit/editSession';
 export { CONFIRM_IMMEDIATELY, DEFAULT_EDIT_HANDLER, InMemoryHost, type HostSimulation } from './edit/inMemoryHost';
 export type { NodeRepositionEvent } from './interaction/repositionEvent';
+export type { NodeOffset, NodeOffsets } from './layout/positionOverrides';
 export type { ModifierKeys, NodeClickEvent } from './interaction/nodeClickEvent';
 export { HANDLE_GAP, HANDLE_RADIUS } from './interaction/hitTest';
 export { LABEL_EDITOR_ACCESSIBLE_NAME } from './interaction/inlineLabelEditor';

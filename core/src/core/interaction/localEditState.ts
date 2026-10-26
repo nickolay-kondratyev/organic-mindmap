@@ -3,7 +3,13 @@ import type { AddEditRequest, EditRequest } from '../edit/editRequest';
 import { EDIT_BLOCKED_REASON, type EditSession, type EditStatus } from '../edit/editSession';
 import { findEditProblem } from '../edit/editValidation';
 import type { NodePositions } from '../layout/layoutTypes';
-import { subtreeMoveBy, withNodeDropped, withoutSubtree, type PositionOverrides } from '../layout/positionOverrides';
+import {
+  offsetBetween,
+  subtreeMoveBy,
+  withNodeDropped,
+  withoutSubtree,
+  type PositionOverrides,
+} from '../layout/positionOverrides';
 import { rememberLast } from '../memo/rememberLast';
 import type { MindmapData, NodeId, Point, Side } from '../model/node';
 import { buildTree, type MindmapTree } from '../model/tree';
@@ -16,6 +22,8 @@ export const DRAFT_NODE_ID: NodeId = 'organic-mindmap:draft-node';
 export interface DropScene {
   readonly tree: MindmapTree;
   readonly positions: NodePositions;
+  /** What the drop's offset from the parent is measured from (see `Scene.placedPositions`). */
+  readonly placedPositions: NodePositions;
 }
 
 /**
@@ -40,8 +48,17 @@ export class LocalEditState {
   private editorRequest: EditRequest | null = null;
   private previousStatus: EditStatus;
 
-  constructor(private readonly edits: EditSession) {
+  /** `onOverridesChange` hears every change the user causes (drops, a confirmed reparent), not `setOverrides`. */
+  constructor(
+    private readonly edits: EditSession,
+    private readonly onOverridesChange: (overrides: PositionOverrides) => void,
+  ) {
     this.previousStatus = edits.status;
+  }
+
+  /** Replaces the overrides, e.g. with positions the host saved earlier. */
+  setOverrides(overrides: PositionOverrides): void {
+    this.overrides = overrides;
   }
 
   /**
@@ -89,12 +106,15 @@ export class LocalEditState {
 
   /**
    * A node dragged by scene-unit `offset` and dropped away from any node (spec I2): stores the override and
-   * returns the event to report, or `null` when `nodeId` is not in `scene`.
+   * returns the event to report, or `null` when `nodeId` is not in `scene` or is the root (which never moves).
    */
   dropAway(scene: DropScene, nodeId: NodeId, offset: Point): NodeRepositionEvent | null {
     const drop = subtreeMoveBy(scene.positions, scene.tree, nodeId, offset);
     if (drop === null) return null;
-    this.overrides = withNodeDropped(this.overrides, scene.tree, drop);
+    const parent = scene.tree.parentOf(nodeId);
+    const parentAt = parent === null ? undefined : scene.placedPositions.get(parent.id);
+    if (parentAt === undefined) return null;
+    this.changeOverrides(withNodeDropped(this.overrides, scene.tree, drop, offsetBetween(parentAt, drop.to)));
     return { nodeId, position: drop.to };
   }
 
@@ -104,9 +124,15 @@ export class LocalEditState {
     this.previousStatus = status;
     // A confirmed reparent lands at its new parent's layout spot, not at a position dragged under the old parent.
     if (previous.kind === 'pending' && previous.request.type === 'move' && status.kind === 'idle') {
-      this.overrides = withoutSubtree(this.overrides, buildTree(this.edits.confirmedData), previous.request.nodeId);
+      const kept = withoutSubtree(this.overrides, buildTree(this.edits.confirmedData), previous.request.nodeId);
+      if (kept.size !== this.overrides.size) this.changeOverrides(kept);
     }
     if (status.kind === 'idle') this.editorRequest = null;
     return status.kind === 'rejected' && status.request === this.editorRequest ? status.request : null;
+  }
+
+  private changeOverrides(overrides: PositionOverrides): void {
+    this.overrides = overrides;
+    this.onOverridesChange(overrides);
   }
 }

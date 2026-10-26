@@ -33,8 +33,9 @@ describe('buildScene', () => {
 });
 
 describe('GIVEN a position override for a first-level node', () => {
+  // The root sits at the origin, so a first-level node's offset is its scene position.
   const dragged = { x: 500, y: 300 };
-  const scene = buildScene(REFERENCE_DATA, DEFAULT_CONFIG, DEFAULT_EXTENSIONS, new Map([['vida', dragged]]));
+  const scene = buildScene(REFERENCE_DATA, DEFAULT_CONFIG, DEFAULT_EXTENSIONS, new Map([['vida', { dx: dragged.x, dy: dragged.y }]]));
 
   it('WHEN built THEN its incoming branch re-routes to end at the new position', () => {
     const branch = scene.branches.find((b) => b.childId === 'vida');
@@ -51,9 +52,10 @@ describe('GIVEN Tragedia dragged earlier and Sonetos dropped onto it later', () 
   const TRAGEDIA_DROP = { x: -303, y: -260 };
   const SONETOS_DROP = { x: -341, y: -233 };
   const ARC_SAMPLES = 40;
+  // First-level nodes: offsets from the root at the origin are their scene positions.
   const overrides = new Map([
-    ['tragedia', TRAGEDIA_DROP],
-    ['sonetos', SONETOS_DROP],
+    ['tragedia', { dx: TRAGEDIA_DROP.x, dy: TRAGEDIA_DROP.y }],
+    ['sonetos', { dx: SONETOS_DROP.x, dy: SONETOS_DROP.y }],
   ]);
   const scene = buildScene(REFERENCE_DATA, DEFAULT_CONFIG, DEFAULT_EXTENSIONS, overrides);
 

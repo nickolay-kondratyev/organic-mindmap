@@ -16,11 +16,13 @@ export interface Scene {
   readonly tree: MindmapTree;
   readonly sizes: NodeSizeMap;
   readonly positions: NodePositions;
+  /** Centres before the push-apart; user offsets are measured from a parent's centre here (see `applyPositionOverrides`). */
+  readonly placedPositions: NodePositions;
   readonly colors: NodeColorMap;
   readonly branches: readonly Branch[];
 }
 
-/** `overrides` are user-dragged node centres (spec I2), applied after the layout pipeline. */
+/** `overrides` are user-dragged node offsets from their parents (spec I2), applied after the layout pipeline. */
 export function buildScene(
   data: MindmapData,
   config: MindmapConfig,
@@ -33,8 +35,13 @@ export function buildScene(
     { tree, sizes, config: config.layout, bowCurve: extensions.bowCurve },
     layoutStagesFor(extensions, config.layout),
   );
-  const positions = applyPositionOverrides(laidOut, { tree, sizes, padding: config.layout.collisionPadding, overrides });
+  const { placed: placedPositions, positions } = applyPositionOverrides(laidOut, {
+    tree,
+    sizes,
+    padding: config.layout.collisionPadding,
+    overrides,
+  });
   const colors = extensions.colorStrategy.resolve(tree, config.theme);
   const branches = buildBranches({ tree, positions, sizes, config: config.branch });
-  return { tree, sizes, positions, colors, branches };
+  return { tree, sizes, positions, placedPositions, colors, branches };
 }
