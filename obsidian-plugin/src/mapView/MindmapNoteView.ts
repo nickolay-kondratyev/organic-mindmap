@@ -11,15 +11,14 @@ import {
   type NodeOffsets,
 } from 'organic-mindmap';
 import type { MindmapNote } from '../mindmapNote';
+import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
 import { firstLinkTarget } from './linkTarget';
 import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type WriteSnapshot } from './noteSession';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
 
 export const OPEN_AS_MARKDOWN_LABEL = 'Open as Markdown';
 const VIEW_ICON = 'git-fork';
-const DELETE_LABEL = 'Delete';
 const DELETED_MESSAGE = 'Deleted from the mindmap.';
-const UNDO_LABEL = 'Undo';
 const UNDO_CHANGED_SINCE_MESSAGE = 'Not undone: the note changed after the delete. Use the Markdown view or file recovery to get it back.';
 const UNDO_FAILED_PREFIX = 'Could not undo the delete:';
 /** Long enough to notice the delete and reach "Undo". */
