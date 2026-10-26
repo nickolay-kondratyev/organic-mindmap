@@ -68,10 +68,10 @@ const EDITOR_WIDTH_FRACTION = 0.8;
 const CURSOR = { idle: '', grab: 'grab', grabbing: 'grabbing', button: 'pointer', busy: 'progress' } as const;
 
 /**
- * Canvas pointer interactions (spec I1-I5): pan/zoom, drag to reposition (push-apart on drop) or to reparent
+ * Canvas pointer interactions (spec I1-I5, I11): pan/zoom, drag to reposition (push-apart on drop) or to reparent
  * (drop onto a node, after a confirmation the user can turn off), hover "+" button, double-click inline rename (both
- * can be switched off in config), node clicks reported via `onNodeClick`, node right-clicks via `onNodeContextMenu`, the host's highlight, plus the pending /
- * rejected feedback.
+ * can be switched off in config), node clicks reported via `onNodeClick`, node right-clicks via `onNodeContextMenu`,
+ * the host's highlight, plus the pending / rejected feedback.
  * Structural edits only ever go through `EditSession` (the host confirms); repositions are library-local
  * overrides reported via `onNodeReposition`. This class is the DOM wiring; the decisions live in DOM-free units
  * (`PointerGesture`, `hitTest`, `LocalEditState`, `ReparentConfirmation`).

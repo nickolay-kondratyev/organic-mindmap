@@ -25,13 +25,13 @@ export function App() {
   const { config, updateConfig } = usePersistedConfig(SETTINGS_PERSISTENCE);
   const [fontStatus, setFontStatus] = useState<LabelFontStatus | null>(null);
   const [lastNodeClick, setLastNodeClick] = useState<NodeClickEvent | null>(null);
+  const apiRef = useRef<MindmapApi | null>(null);
   const [contextMenu, setContextMenu] = useState<NodeContextMenuEvent | null>(null);
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
   const requestDelete = useCallback((target: NodeContextMenuEvent): string | null => {
     const result = apiRef.current?.requestEdit({ type: 'delete', nodeId: target.nodeId });
     return result?.kind === 'refused' ? result.reason : null;
   }, []);
-  const apiRef = useRef<MindmapApi | null>(null);
   const attachApi = useCallback((api: MindmapApi | null) => {
     apiRef.current = api;
     exposeMindmapApi(api);

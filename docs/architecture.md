@@ -178,8 +178,8 @@ branches per pointer move, over a frozen base scene.
   have no rename anyway). Node right-clicks (`onNodeContextMenu`, `NodeContextMenuEvent` with node id + client point,
   spec I11): only a real node under the pointer reports and suppresses the browser's menu (`contextMenuNodeId`), and
   only while the hook is set; bare canvas, the "+" and preview/draft nodes keep the browser's menu. The library draws
-  no menu: hosts show their own and send `delete` via `requestEdit`. Host highlight (`setHighlightedNode`): a ring in `theme.color.highlight` painted by the
-  overlay, so it never rebuilds the scene; an unknown id draws nothing. DOM overlays (`<input>` editor, `role="alert"` notice with the rejection or
+  no menu: hosts show their own and send `delete` via `requestEdit`. Host highlight (`setHighlightedNode`): a ring
+  in `theme.color.highlight` painted by the overlay, so it never rebuilds the scene; an unknown id draws nothing. DOM overlays (`<input>` editor, `role="alert"` notice with the rejection or
   refusal reason, `role="dialog"` reparent question) are created lazily as siblings right after the canvas, positioned via `offsetLeft/Top`. A
   rejected edit sent from the editor reopens it with the typed label (I5.4).
   `MindmapHandle.getNodeScreenBox` / `getData` expose node boxes and confirmed data (host UI, E2E).
