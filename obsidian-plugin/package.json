@@ -1,0 +1,29 @@
+{
+  "name": "organic-mindmap-obsidian-plugin",
+  "private": true,
+  "description": "The Organic Mindmap Obsidian plugin. Bundles to main.js next to this file; manifest.json lives at the repo root.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "dev": "node esbuild.config.mjs --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "setup:obsidian": "bash scripts/setup-obsidian-bin.sh",
+    "setup:dev-vault": "bash scripts/setup-dev-vault.sh",
+    "test:e2e": "bash scripts/run-e2e.sh"
+  },
+  "dependencies": {
+    "organic-mindmap": "*"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "builtin-modules": "^5.4.0",
+    "esbuild": "^0.28.2",
+    "obsidian": "1.12.3",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,22 +1,27 @@
 {
   "name": "organic-mindmap-workspace",
   "private": true,
-  "description": "Workspace root: the library lives in core/. Root scripts delegate to it.",
+  "description": "Workspace root: the library lives in core/, the Obsidian plugin in obsidian-plugin/. Root scripts delegate to them.",
   "license": "MIT",
   "type": "module",
   "workspaces": [
-    "core"
+    "core",
+    "obsidian-plugin"
   ],
   "scripts": {
     "dev": "npm run dev -w core --",
-    "build": "npm run build -w core --",
+    "build": "npm run build --workspaces --",
+    "build:plugin": "npm run build -w obsidian-plugin --",
+    "dev:plugin": "npm run dev -w obsidian-plugin --",
     "build:demo": "npm run build:demo -w core --",
     "preview": "npm run preview -w core --",
-    "typecheck": "npm run typecheck -w core --",
-    "test": "npm run test -w core --",
+    "typecheck": "npm run typecheck --workspaces --",
+    "test": "npm run test --workspaces --",
     "test:watch": "npm run test:watch -w core --",
     "coverage": "npm run coverage -w core --",
     "bench": "npm run bench -w core --",
-    "e2e": "npm run e2e -w core --"
+    "e2e": "npm run e2e -w core --",
+    "setup:dev-vault": "npm run setup:dev-vault -w obsidian-plugin --",
+    "test:e2e:obsidian": "npm run test:e2e -w obsidian-plugin --"
   }
 }

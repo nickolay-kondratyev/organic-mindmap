@@ -1,7 +1,24 @@
 # Architecture
 
-The repo is an npm workspaces monorepo; the library is the package `organic-mindmap` in `core/`. Paths in this doc are
-relative to `core/`. The library has two entry points:
+## Packages
+
+npm workspaces monorepo, two packages, one dependency direction:
+
+```
+obsidian-plugin/  (private; Obsidian plugin, bundles to main.js)
+      |  imports only `organic-mindmap` (the public entry; `coreAlias.ts` resolves it to core/src)
+      v
+core/             (package `organic-mindmap`: library, demo, tests; never imports `obsidian`)
+```
+
+`core/src/noObsidianImports.test.ts` guards the direction. `manifest.json` and `versions.json` live at the repo root
+because Obsidian's release flow reads them there; `obsidian-plugin/scripts/setup-dev-vault.sh` copies the manifest
+next to the bundle. The plugin uses `mountMindmap` (no React in the bundle). The rest of this doc is the library;
+paths are relative to `core/`.
+
+## Library entry points
+
+The library has two entry points:
 
 - `organic-mindmap` (`src/index.ts` -> `src/core/`): framework-free TypeScript. **Never imports React**
   (guarded by `src/core/noReactImports.test.ts`).
@@ -224,3 +241,17 @@ page and loads none of the runner code or CSS.
   `npx playwright test e2e/reference-view.spec.ts --update-snapshots` after an intended visual change.
 - Vendored Kalam (`assets/fonts/kalam/`, SIL OFL) is the same file as the default Fontsource URL; unit tests
   read it via `test-support/vendoredKalam.ts`, so no test hits the network.
+
+## Obsidian plugin (`obsidian-plugin/`)
+
+- `src/main.ts` is the Obsidian entry (`Plugin` subclass). Logic goes into sibling modules that do not import
+  `obsidian` (e.g. `commands.ts`, `statusMessage.ts`) so Vitest covers them without an Obsidian runtime
+  (`obsidian` is a types-only package outside the app).
+- Obsidian E2E (`npm run test:e2e:obsidian`, `e2e/*.e2e.ts`): `scripts/run-e2e.sh` provisions a pinned Obsidian
+  (`scripts/setup-obsidian-bin.sh`, Linux download into `.tmp/obsidian-e2e/bin/`, or `OBSIDIAN_PATH`), seeds
+  `.dev-vault/` with the built plugin, then `e2e/obsidianHarness.ts` spawns Obsidian on a throwaway copy of the vault
+  with an isolated `--user-data-dir`, attaches over CDP (not `_electron.launch`), seeds the window size, enables the
+  plugin at runtime and exposes `openFile` / `runCommand` / `hasCommand` / `relaunch`. The mechanics are documented in
+  the harness; keep them. Specs never import plugin modules that import `obsidian`. Key journeys only, no look
+  assertions; one Obsidian per spec file, serial.
+
