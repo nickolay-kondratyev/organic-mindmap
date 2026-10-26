@@ -6,11 +6,16 @@ import type { NodePositions } from './layoutTypes';
 import {
   applyPositionOverrides,
   moveSubtree,
+  nodeOffsetsOf,
   NO_POSITION_OVERRIDES,
+  offsetBetween,
+  overridesFromNodeOffsets,
   subtreeMoveBy,
   subtreeMoveTo,
   withNodeDropped,
   withoutSubtree,
+  type NodeOffset,
+  type NodeOffsets,
   type PositionOverrides,
   type SubtreeMove,
 } from './positionOverrides';
@@ -33,8 +38,12 @@ const positions: NodePositions = new Map<NodeId, Point>([
   ['b', { x: 300, y: 200 }],
 ]);
 
-function apply(overrides: PositionOverrides): NodePositions {
-  return applyPositionOverrides(positions, { tree, sizes, padding: PADDING, overrides });
+function apply(overrides: PositionOverrides, laidOut: NodePositions = positions): NodePositions {
+  return applyPositionOverrides(laidOut, { tree, sizes, padding: PADDING, overrides }).positions;
+}
+
+function overrides(...entries: [NodeId, NodeOffset][]): PositionOverrides {
+  return new Map(entries);
 }
 
 /** Moves `nodeId` (and its subtree) in `from` so the node lands at `to`; the node must have a position there. */
@@ -98,91 +107,91 @@ describe('applyPositionOverrides', () => {
     expect(apply(NO_POSITION_OVERRIDES)).toBe(positions);
   });
 
-  it('GIVEN an override for a parent WHEN applied THEN the parent sits exactly at it', () => {
-    expect(apply(new Map([['a', { x: 320, y: -60 }]])).get('a')).toEqual({ x: 320, y: -60 });
+  it('GIVEN an offset for a parent WHEN applied THEN the parent sits exactly at that offset from the root', () => {
+    expect(apply(overrides(['a', { dx: 320, dy: -60 }])).get('a')).toEqual({ x: 320, y: -60 });
   });
 
-  it('GIVEN an override for a parent WHEN applied THEN its child keeps its offset to the parent', () => {
-    expect(apply(new Map([['a', { x: 320, y: -60 }]])).get('a1')).toEqual({ x: 520, y: -60 });
+  it('GIVEN an offset for a parent WHEN applied THEN its child keeps its offset to the parent', () => {
+    expect(apply(overrides(['a', { dx: 320, dy: -60 }])).get('a1')).toEqual({ x: 520, y: -60 });
   });
 
-  it('GIVEN overrides for a parent and its child WHEN applied THEN the child ends at its own override', () => {
-    const result = apply(
-      new Map([
-        ['a', { x: 320, y: -60 }],
-        ['a1', { x: 450, y: 0 }],
-      ]),
-    );
+  it('GIVEN offsets for a parent and its child WHEN applied THEN the child ends at its offset from the moved parent', () => {
+    const result = apply(overrides(['a', { dx: 320, dy: -60 }], ['a1', { dx: 130, dy: 60 }]));
     expect(result.get('a1')).toEqual({ x: 450, y: 0 });
   });
 
-  it('GIVEN an override across the root for a parent WHEN applied THEN its child is mirrored to the far side of it', () => {
-    expect(apply(new Map([['a', { x: -300, y: -100 }]])).get('a1')).toEqual({ x: -500, y: -100 });
+  it('GIVEN an offset for a child WHEN its parent is laid out somewhere else THEN the child lands relative to the new spot', () => {
+    const parentLaidOutHigher: NodePositions = new Map([...positions, ['a', { x: 300, y: -300 }], ['a1', { x: 500, y: -300 }]]);
+    expect(apply(overrides(['a1', { dx: 150, dy: 30 }]), parentLaidOutHigher).get('a1')).toEqual({ x: 450, y: -270 });
   });
 
-  it('GIVEN an override for a node that no longer exists WHEN applied THEN it is ignored', () => {
-    expect(apply(new Map([['gone', { x: 1, y: 1 }]]))).toBe(positions);
+  it('GIVEN an offset across the root for a parent WHEN applied THEN its child is mirrored to the far side of it', () => {
+    expect(apply(overrides(['a', { dx: -300, dy: -100 }])).get('a1')).toEqual({ x: -500, y: -100 });
   });
 
-  it('GIVEN an override that drops a node onto another WHEN applied THEN the other node is pushed clear', () => {
-    const result = apply(new Map([['a', { x: 300, y: 195 }]]));
+  it('GIVEN an offset for a node that no longer exists WHEN applied THEN it is ignored', () => {
+    expect(apply(overrides(['gone', { dx: 1, dy: 1 }]))).toBe(positions);
+  });
+
+  it('GIVEN an offset that drops a node onto another WHEN applied THEN the other node is pushed clear', () => {
+    const result = apply(overrides(['a', { dx: 300, dy: 195 }]));
     expect(boxesOverlap(result, 'a', 'b')).toBe(false);
   });
 
-  it('GIVEN an override that drops a node onto another WHEN applied THEN the overridden node does not yield', () => {
-    expect(apply(new Map([['a', { x: 300, y: 195 }]])).get('a')).toEqual({ x: 300, y: 195 });
+  it('GIVEN an offset that drops a node onto another WHEN applied THEN the overridden node does not yield', () => {
+    expect(apply(overrides(['a', { dx: 300, dy: 195 }])).get('a')).toEqual({ x: 300, y: 195 });
   });
 });
 
 describe('GIVEN a node dragged earlier and another node dropped onto it later', () => {
   // Map order is drop order: `b` was placed first, then `a` was dropped onto it.
-  const overrides: PositionOverrides = new Map([
-    ['b', { x: 300, y: 200 }],
-    ['a', { x: 300, y: 195 }],
-  ]);
+  const dropped = overrides(['b', { dx: 300, dy: 200 }], ['a', { dx: 300, dy: 195 }]);
 
   it('WHEN applied THEN the two no longer overlap', () => {
-    expect(boxesOverlap(apply(overrides), 'a', 'b')).toBe(false);
+    expect(boxesOverlap(apply(dropped), 'a', 'b')).toBe(false);
   });
 
   it('WHEN applied THEN the later drop stays exactly where it was dropped', () => {
-    expect(apply(overrides).get('a')).toEqual({ x: 300, y: 195 });
+    expect(apply(dropped).get('a')).toEqual({ x: 300, y: 195 });
   });
 });
 
 describe('GIVEN a node dragged earlier onto a laid-out node and an unrelated later drop', () => {
-  const overrides: PositionOverrides = new Map([
-    ['b', { x: 300, y: -95 }],
-    ['a1', { x: 700, y: 300 }],
-  ]);
+  const dropped = overrides(['b', { dx: 300, dy: -95 }], ['a1', { dx: 400, dy: 400 }]);
 
   it('WHEN applied THEN the earlier drop still does not yield to the laid-out node', () => {
-    expect(apply(overrides).get('b')).toEqual({ x: 300, y: -95 });
+    expect(apply(dropped).get('b')).toEqual({ x: 300, y: -95 });
   });
 });
 
 describe('GIVEN a child that was dragged earlier', () => {
-  const earlier: PositionOverrides = new Map([['a1', { x: 520, y: -40 }]]);
+  // Drawn at (520, -40), parent `a` at (300, -100).
+  const earlier = overrides(['a1', { dx: 220, dy: 60 }]);
 
   describe('WHEN its parent is dropped 10 right and 20 down', () => {
-    const result = withNodeDropped(earlier, tree, { nodeId: 'a', from: { x: 300, y: -100 }, to: { x: 310, y: -80 }, mirrored: false });
+    const result = withNodeDropped(
+      earlier,
+      tree,
+      { nodeId: 'a', from: { x: 300, y: -100 }, to: { x: 310, y: -80 }, mirrored: false },
+      { dx: 310, dy: -80 },
+    );
 
-    it('THEN the parent is recorded at its drop point', () => {
-      expect(result.get('a')).toEqual({ x: 310, y: -80 });
+    it('THEN the parent is recorded at its offset from the root', () => {
+      expect(result.get('a')).toEqual({ dx: 310, dy: -80 });
     });
 
     it('THEN the child moves along by the same delta instead of snapping back', () => {
-      expect(result.get('a1')).toEqual({ x: 530, y: -20 });
+      expect(apply(result).get('a1')).toEqual({ x: 530, y: -20 });
     });
   });
 
   describe('WHEN its parent is dropped across the root', () => {
     const scene = apply(earlier);
     const drop = moveTo(scene, 'a', { x: -300, y: -100 });
-    const result = withNodeDropped(earlier, tree, drop);
+    const result = withNodeDropped(earlier, tree, drop, { dx: -300, dy: -100 });
 
     it('THEN the child stays mirrored relative to the parent', () => {
-      expect(result.get('a1')).toEqual({ x: -520, y: -40 });
+      expect(apply(result).get('a1')).toEqual({ x: -520, y: -40 });
     });
 
     it('THEN the drawn child is where the drag preview showed it', () => {
@@ -191,14 +200,16 @@ describe('GIVEN a child that was dragged earlier', () => {
   });
 
   it('WHEN the child is dropped again after its sibling subtree THEN it counts as the latest drop', () => {
-    const afterOther = withNodeDropped(earlier, tree, { nodeId: 'b', from: { x: 300, y: 200 }, to: { x: 310, y: 220 }, mirrored: false });
-    const result = withNodeDropped(afterOther, tree, { nodeId: 'a1', from: { x: 520, y: -40 }, to: { x: 530, y: -50 }, mirrored: false });
+    const bDrop: SubtreeMove = { nodeId: 'b', from: { x: 300, y: 200 }, to: { x: 310, y: 220 }, mirrored: false };
+    const afterOther = withNodeDropped(earlier, tree, bDrop, { dx: 310, dy: 220 });
+    const a1Drop: SubtreeMove = { nodeId: 'a1', from: { x: 520, y: -40 }, to: { x: 530, y: -50 }, mirrored: false };
+    const result = withNodeDropped(afterOther, tree, a1Drop, { dx: 230, dy: 50 });
     expect([...result.keys()].at(-1)).toBe('a1');
   });
 
-  it('WHEN an unrelated node is dropped THEN the child keeps its position', () => {
-    const result = withNodeDropped(earlier, tree, { nodeId: 'b', from: { x: 300, y: 200 }, to: { x: 310, y: 220 }, mirrored: false });
-    expect(result.get('a1')).toEqual({ x: 520, y: -40 });
+  it('WHEN an unrelated node is dropped THEN the child keeps its offset', () => {
+    const bDrop: SubtreeMove = { nodeId: 'b', from: { x: 300, y: 200 }, to: { x: 310, y: 220 }, mirrored: false };
+    expect(withNodeDropped(earlier, tree, bDrop, { dx: 310, dy: 220 }).get('a1')).toEqual({ dx: 220, dy: 60 });
   });
 
   it('WHEN the subtree of its parent is cleared THEN its override is gone', () => {
@@ -207,6 +218,45 @@ describe('GIVEN a child that was dragged earlier', () => {
 
   it('WHEN the subtree of an unrelated node is cleared THEN its override stays', () => {
     expect(withoutSubtree(earlier, tree, 'b').has('a1')).toBe(true);
+  });
+});
+
+describe('GIVEN a child dropped onto its parent, which is pushed aside to make room', () => {
+  const placedAndDrawn = (dropped: PositionOverrides) =>
+    applyPositionOverrides(positions, { tree, sizes, padding: PADDING, overrides: dropped });
+  const firstDrop = overrides(['a1', { dx: 0, dy: 10 }]);
+  const before = placedAndDrawn(firstDrop);
+  const target: Point = { x: 320, y: -85 };
+
+  it('WHEN dragged again THEN it lands exactly where dropped, not off by how far the parent was pushed', () => {
+    expect(before.positions.get('a'), 'precondition: the parent is drawn pushed aside').not.toEqual(before.placed.get('a'));
+    const drop = moveTo(before.positions, 'a1', target);
+    const again = withNodeDropped(firstDrop, tree, drop, offsetBetween(before.placed.get('a')!, target));
+    expect(apply(again).get('a1')).toEqual(target);
+  });
+});
+
+describe('overridesFromNodeOffsets', () => {
+  it('GIVEN host offsets WHEN read THEN their key order is kept as the drop order', () => {
+    const read = overridesFromNodeOffsets({ b: { dx: 1, dy: 2 }, a: { dx: 3, dy: 4 } });
+    expect([...read.keys()]).toEqual(['b', 'a']);
+  });
+
+  it('GIVEN entries without finite numbers (e.g. a hand-edited file) WHEN read THEN only the valid entry is kept', () => {
+    const untrusted = {
+      text: { dx: '1', dy: 2 },
+      missing: { dx: 1 },
+      empty: null,
+      infinite: { dx: Number.POSITIVE_INFINITY, dy: 0 },
+      valid: { dx: 1, dy: 2 },
+    } as unknown as NodeOffsets;
+    expect([...overridesFromNodeOffsets(untrusted).keys()]).toEqual(['valid']);
+  });
+
+  it('GIVEN overrides saved as JSON WHEN read back THEN they equal the originals in the same order', () => {
+    const original = overrides(['b', { dx: 300, dy: -95 }], ['a1', { dx: 400.5, dy: -0.25 }]);
+    const saved = JSON.stringify(nodeOffsetsOf(original));
+    expect([...overridesFromNodeOffsets(JSON.parse(saved) as NodeOffsets)]).toEqual([...original]);
   });
 });
 
@@ -225,8 +275,8 @@ describe('GIVEN a three-level branch dragged across parents in successive drops'
     ['a1', { x: 600, y: -300 }],
     ['a11', { x: 900, y: -400 }],
   ]);
-  const drawn = (overrides: PositionOverrides): NodePositions =>
-    applyPositionOverrides(laidOut, { tree: branch, sizes: branchSizes, padding: PADDING, overrides });
+  const drawn = (dropped: PositionOverrides) =>
+    applyPositionOverrides(laidOut, { tree: branch, sizes: branchSizes, padding: PADDING, overrides: dropped });
   // Flips the root's child, then its child inside the flipped subtree, then drags each back and forth again.
   const drops: readonly { readonly nodeId: NodeId; readonly to: Point }[] = [
     { nodeId: 'a', to: { x: -300, y: -200 } },
@@ -240,14 +290,15 @@ describe('GIVEN a three-level branch dragged across parents in successive drops'
   ];
 
   it('WHEN each drop lands THEN the drawn map is exactly what the drag preview showed', () => {
-    let overrides: PositionOverrides = NO_POSITION_OVERRIDES;
+    let dropped: PositionOverrides = NO_POSITION_OVERRIDES;
     const mismatches: string[] = [];
     drops.forEach(({ nodeId, to }, index) => {
-      const scene = drawn(overrides);
+      const { placed, positions: scene } = drawn(dropped);
       const move = subtreeMoveTo(scene, branch, nodeId, to)!;
-      overrides = withNodeDropped(overrides, branch, move);
+      const parentAt = placed.get(branch.parentOf(nodeId)!.id)!;
+      dropped = withNodeDropped(dropped, branch, move, offsetBetween(parentAt, to));
       const preview = JSON.stringify([...moveSubtree(scene, branch, move)]);
-      const afterDrop = JSON.stringify([...drawn(overrides)]);
+      const afterDrop = JSON.stringify([...drawn(dropped).positions]);
       if (preview !== afterDrop) mismatches.push(`drop=[${index}] preview=[${preview}] afterDrop=[${afterDrop}]`);
     });
     expect(mismatches).toEqual([]);

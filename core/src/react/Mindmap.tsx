@@ -13,6 +13,7 @@ import {
   type MindmapView,
   type NodeClickEvent,
   type NodeContextMenuEvent,
+  type NodeOffsets,
   type NodeRepositionEvent,
   type PartialMindmapConfig,
 } from '../core/index';
@@ -33,6 +34,13 @@ export interface MindmapProps {
   /** Pan/zoom by the user or the library (incl. the initial fit-to-content); not fired for `ref.setView`. */
   readonly onViewChange?: (view: MindmapView) => void;
   readonly onNodeReposition?: (event: NodeRepositionEvent) => void;
+  /**
+   * Saved node positions (see `MountOptions.nodeOffsets`). A new object replaces the map's positions; leaving it
+   * `undefined` keeps whatever the user dragged.
+   */
+  readonly nodeOffsets?: NodeOffsets;
+  /** Every user-placed node after each user change (see `MountOptions.onNodeOffsetsChange`); save it as-is. */
+  readonly onNodeOffsetsChange?: (offsets: NodeOffsets) => void;
   /** A click on a node with its modifier keys (see `MountOptions.onNodeClick`); a double-click fires twice. */
   readonly onNodeClick?: (event: NodeClickEvent) => void;
   /**
@@ -66,6 +74,7 @@ type CallbackProp =
   | 'onEditStatusChange'
   | 'onViewChange'
   | 'onNodeReposition'
+  | 'onNodeOffsetsChange'
   | 'onNodeClick'
   | 'onNodeContextMenu'
   | 'onFontStatusChange'
@@ -90,7 +99,9 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
     onEditRequest,
     onEditStatusChange,
     onViewChange,
+    nodeOffsets,
     onNodeReposition,
+    onNodeOffsetsChange,
     onNodeClick,
     onNodeContextMenu,
     onFontStatusChange,
@@ -106,6 +117,7 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
     onEditStatusChange,
     onViewChange,
     onNodeReposition,
+    onNodeOffsetsChange,
     onNodeClick,
     onNodeContextMenu,
     onFontStatusChange,
@@ -126,10 +138,12 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
       config: config ?? {},
       extensions: extensions ?? {},
       ...(fontFetcher === undefined ? {} : { fontFetcher }),
+      ...(nodeOffsets === undefined ? {} : { nodeOffsets }),
       onEditRequest: (request, currentData) => (callbacksRef.current.onEditRequest ?? DEFAULT_EDIT_HANDLER)(request, currentData),
       onEditStatusChange: (status) => callbacksRef.current.onEditStatusChange?.(status),
       onViewChange: (view) => callbacksRef.current.onViewChange?.(view),
       onNodeReposition: (event) => callbacksRef.current.onNodeReposition?.(event),
+      onNodeOffsetsChange: (offsets) => callbacksRef.current.onNodeOffsetsChange?.(offsets),
       onNodeClick: (event) => callbacksRef.current.onNodeClick?.(event),
       ...(onNodeContextMenu === undefined
         ? {}
@@ -160,6 +174,9 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
   useEffect(() => {
     handleRef.current?.setExtensions(extensions);
   }, [extensions]);
+  useEffect(() => {
+    if (nodeOffsets !== undefined) handleRef.current?.setNodeOffsets(nodeOffsets);
+  }, [nodeOffsets]);
 
   return <canvas ref={canvasRef} className={className} style={{ ...FILL_PARENT, ...style }} data-testid="mindmap-canvas" />;
 });

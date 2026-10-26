@@ -1,8 +1,20 @@
+import { DEFAULT_CONFIG } from '../config/config';
 import type { EditHandler, EditRequest } from '../edit/editRequest';
 import { EDIT_BLOCKED_REASON, EditSession, type EditSubmitResult } from '../edit/editSession';
+import { DEFAULT_EDIT_HANDLER } from '../edit/inMemoryHost';
+import { DEFAULT_EXTENSIONS } from '../extensions';
 import type { NodePositions } from '../layout/layoutTypes';
-import type { MindmapData, Point } from '../model/node';
+import {
+  nodeOffsetsOf,
+  overridesFromNodeOffsets,
+  type NodeOffset,
+  type NodeOffsets,
+  type PositionOverrides,
+} from '../layout/positionOverrides';
+import type { MindmapData, NodeId, Point } from '../model/node';
+import { REFERENCE_DATA } from '../model/referenceData';
 import { buildTree } from '../model/tree';
+import { buildScene, type Scene } from '../render/scene';
 import { addDraftRequest, DRAFT_NODE_ID, LocalEditState, type DropScene } from './localEditState';
 
 const DATA: MindmapData = [
@@ -19,7 +31,7 @@ const POSITIONS: NodePositions = new Map<string, Point>([
   ['a1', { x: 200, y: -50 }],
   ['b', { x: 100, y: 50 }],
 ]);
-const SCENE: DropScene = { tree: buildTree(DATA), positions: POSITIONS };
+const SCENE: DropScene = { tree: buildTree(DATA), positions: POSITIONS, placedPositions: POSITIONS };
 const OFFSET: Point = { x: 30, y: 40 };
 const RENAME_A: EditRequest = { type: 'rename', nodeId: 'a', text: 'Typed label' };
 const MOVE_A_UNDER_B: EditRequest = { type: 'move', nodeId: 'a', newParentId: 'b' };
@@ -71,13 +83,16 @@ describe('LocalEditState', () => {
   let state: LocalEditState;
   /** What each status change asked to reopen for retry, in order. */
   let retries: (EditRequest | null)[];
+  /** Every override set reported for the host, in order. */
+  let reported: PositionOverrides[];
 
   beforeEach(() => {
     host = new ManualHost();
     retries = [];
+    reported = [];
     // Wired like the mount: every status change reaches the state.
     session = new EditSession(DATA, host.handle, (status) => retries.push(state.onEditStatusChange(status)));
-    state = new LocalEditState(session);
+    state = new LocalEditState(session, (overrides) => reported.push(overrides));
   });
 
   describe('GIVEN no draft and no pending edit', () => {
@@ -139,8 +154,39 @@ describe('LocalEditState', () => {
       expect(reposition).toEqual({ nodeId: 'a', position: { x: 130, y: -10 } });
     });
 
-    it('WHEN asked for overrides THEN a has its dropped position', () => {
-      expect(state.effectiveOverrides().get('a')).toEqual({ x: 130, y: -10 });
+    it('WHEN asked for overrides THEN a has its drop point as an offset from its parent', () => {
+      expect(state.effectiveOverrides().get('a')).toEqual({ dx: 130, dy: -10 });
+    });
+
+    it('WHEN the drop is handled THEN the host is told the overrides with a in them', () => {
+      expect(reported).toEqual([state.effectiveOverrides()]);
+    });
+  });
+
+  describe('GIVEN a scene where the parent a is drawn pushed 10 right of where it is placed', () => {
+    const pushedScene: DropScene = { ...SCENE, positions: new Map([...POSITIONS, ['a', { x: 110, y: -50 }]]) };
+
+    it('WHEN its child is dropped away THEN the offset is measured from where a is placed, not drawn', () => {
+      state.dropAway(pushedScene, 'a1', OFFSET);
+      expect(state.effectiveOverrides().get('a1')).toEqual({ dx: 130, dy: 40 });
+    });
+  });
+
+  describe('GIVEN the root', () => {
+    it('WHEN it is dropped away THEN nothing is reported, as the root never moves', () => {
+      expect(state.dropAway(SCENE, 'root', OFFSET)).toBeNull();
+    });
+  });
+
+  describe('GIVEN overrides set by the host', () => {
+    beforeEach(() => state.setOverrides(new Map([['b', { dx: 5, dy: 6 }]])));
+
+    it('WHEN asked for overrides THEN they are the host ones', () => {
+      expect(state.effectiveOverrides().get('b')).toEqual({ dx: 5, dy: 6 });
+    });
+
+    it('WHEN set THEN they are not reported back to the host', () => {
+      expect(reported).toEqual([]);
     });
   });
 
@@ -152,6 +198,11 @@ describe('LocalEditState', () => {
     it('WHEN it is dropped away THEN no override is stored', () => {
       state.dropAway(SCENE, 'gone', OFFSET);
       expect(state.effectiveOverrides().size).toBe(0);
+    });
+
+    it('WHEN it is dropped away THEN nothing is reported to the host', () => {
+      state.dropAway(SCENE, 'gone', OFFSET);
+      expect(reported).toEqual([]);
     });
   });
 
@@ -182,10 +233,23 @@ describe('LocalEditState', () => {
         expect([...state.effectiveOverrides().keys()]).toEqual(['b']);
       });
 
+      it('WHEN the host confirms THEN the host is told only b keeps an override', async () => {
+        host.resolve(A_MOVED_UNDER_B);
+        await settledOf(result);
+        expect([...reported.at(-1)!.keys()]).toEqual(['b']);
+      });
+
       it('WHEN the host rejects THEN all overrides are kept', async () => {
         host.reject(new Error('No'));
         await settledOf(result);
         expect([...state.effectiveOverrides().keys()].sort()).toEqual(['a', 'a1', 'b']);
+      });
+
+      it('WHEN the host rejects THEN nothing new is reported', async () => {
+        const reportedBefore = reported.length;
+        host.reject(new Error('No'));
+        await settledOf(result);
+        expect(reported.length).toBe(reportedBefore);
       });
     });
 
@@ -246,5 +310,49 @@ describe('LocalEditState', () => {
       await settledOf(result);
       expect(retries.at(-1)).toBeNull();
     });
+  });
+});
+
+/** Builds the scene a host would see with `overrides`, like the mount does. */
+function sceneOf(data: MindmapData, overrides: PositionOverrides): Scene {
+  return buildScene(data, DEFAULT_CONFIG, DEFAULT_EXTENSIONS, overrides);
+}
+
+function plus(point: Point, offset: NodeOffset): Point {
+  return { x: point.x + offset.dx, y: point.y + offset.dy };
+}
+
+describe('GIVEN Macbeth dragged into empty space and the reported positions saved as JSON', () => {
+  const DRAG: Point = { x: -120, y: -260 };
+  const MACBETH: NodeId = 'macbeth';
+  let dropPoint: Point;
+  let saved: string;
+
+  beforeAll(() => {
+    let last: PositionOverrides = new Map();
+    const state = new LocalEditState(new EditSession(REFERENCE_DATA, DEFAULT_EDIT_HANDLER, () => {}), (overrides) => {
+      last = overrides;
+    });
+    dropPoint = state.dropAway(sceneOf(REFERENCE_DATA, new Map()), MACBETH, DRAG)!.position;
+    saved = JSON.stringify(nodeOffsetsOf(last));
+  });
+
+  function restored(data: MindmapData): Scene {
+    return sceneOf(data, overridesFromNodeOffsets(JSON.parse(saved) as NodeOffsets));
+  }
+
+  it('WHEN restored onto the same map THEN Macbeth is drawn where it was dropped', () => {
+    expect(restored(REFERENCE_DATA).positions.get(MACBETH)).toEqual(dropPoint);
+  });
+
+  it('WHEN restored after a node was added that moves its parent THEN Macbeth keeps its offset from the parent', () => {
+    const withNewNode: MindmapData = [...REFERENCE_DATA, { id: 'new', parentId: 'root', text: 'NEW', side: 'left' }];
+    const offset = (JSON.parse(saved) as NodeOffsets)[MACBETH]!;
+    const scene = restored(withNewNode);
+    expect(
+      sceneOf(withNewNode, new Map()).positions.get('tragedia'),
+      'precondition: the new node moves Tragedia',
+    ).not.toEqual(sceneOf(REFERENCE_DATA, new Map()).positions.get('tragedia'));
+    expect(scene.positions.get(MACBETH)).toEqual(plus(scene.placedPositions.get('tragedia')!, offset));
   });
 });

@@ -28,6 +28,13 @@ Navigation hooks: `onNodeClick({ nodeId, ctrlKey, metaKey, altKey, shiftKey })` 
 order), `text.nodeFit.minFontScale` (long labels end with "…"). Labels with characters the font lacks (emoji, CJK)
 fall back to system fonts on the node. Changes per version: [CHANGELOG.md](CHANGELOG.md).
 
+Saved positions: every drop of a dragged node calls `onNodeOffsetsChange(offsets)` with all user-placed nodes as
+offsets from their parent, e.g. `{ "n7f3k": { "dx": 120, "dy": -40 } }` (a confirmed reparent clears the moved
+branch and reports too). Save that object as-is and hand it back as `nodeOffsets` (mount option or `<Mindmap>` prop;
+`setNodeOffsets(offsets)` on the handle) to restore the layout. Offsets are relative, so a node still sits next to
+its parent after the auto layout moves the parent; ids not on the map and entries without numeric `dx`/`dy` are
+ignored. `onNodeReposition({ nodeId, position })` still reports each drop as an absolute scene point.
+
 ## Demo runner
 
 ```bash
