@@ -178,6 +178,22 @@ describe('MindmapNote edits', () => {
     it('WHEN adding THEN the new line uses CRLF too', () => {
       expect(written(note, { type: 'add', parentId: 'r', text: 'b' })).toBe('- root ^r\r\n\t- a ^a\r\n\t- b ^gen1\r\n');
     });
+
+    it('WHEN saving a position THEN the new layout block uses CRLF too', () => {
+      expect(positionWritten(readNote('- root ^r\r\n\t- a ^a\r\n'), 'a', { dx: 1, dy: 2 })).toBe(
+        '- root ^r\r\n\t- a ^a\r\n\r\n%%\r\n```organic-mindmap-layout\r\n{\r\n  "a": {"dx": 1, "dy": 2}\r\n}\r\n```\r\n%%\r\n',
+      );
+    });
+  });
+
+  describe('GIVEN a parent whose last child has its own nested branch', () => {
+    const text = noteText('- root ^r', '\t- a ^a', '\t\t- a1 ^a1', '\t\t\t- a11 ^a11', '\t- b ^b');
+
+    it('WHEN adding under the parent THEN the new item comes after the whole nested branch', () => {
+      expect(written(readNote(text), { type: 'add', parentId: 'a', text: 'a2' })).toBe(
+        noteText('- root ^r', '\t- a ^a', '\t\t- a1 ^a1', '\t\t\t- a11 ^a11', '\t\t- a2 ^gen1', '\t- b ^b'),
+      );
+    });
   });
 
   describe('GIVEN a task item', () => {
