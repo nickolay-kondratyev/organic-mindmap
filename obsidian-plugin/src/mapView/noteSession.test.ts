@@ -1,6 +1,6 @@
 import { EDIT_PROBLEM } from 'organic-mindmap';
 import { noteText, readNote } from '../mindmapNote/testSupport';
-import { MindmapNoteSession, STALE_EDIT_REASON, STALE_POSITIONS_REASON, type NoteTextFile } from './noteSession';
+import { MindmapNoteSession, NoteClosedError, STALE_EDIT_REASON, STALE_POSITIONS_REASON, type NoteTextFile } from './noteSession';
 
 /** In-memory file with the atomic read-modify-write the session needs. */
 class FakeNoteFile implements NoteTextFile {
@@ -9,6 +9,32 @@ class FakeNoteFile implements NoteTextFile {
   async process(change: (text: string) => string): Promise<string> {
     this.text = change(this.text);
     return this.text;
+  }
+}
+
+/** A file whose `process` holds the write until `finish()`: a write still in flight. */
+class InFlightNoteFile implements NoteTextFile {
+  private release: () => void = () => undefined;
+  private readonly gate = new Promise<void>((resolve) => {
+    this.release = resolve;
+  });
+  private markStarted: () => void = () => undefined;
+  /** Resolves once a write has started (`process` was called). */
+  readonly started = new Promise<void>((resolve) => {
+    this.markStarted = resolve;
+  });
+
+  constructor(public text: string) {}
+
+  async process(change: (text: string) => string): Promise<string> {
+    this.markStarted();
+    await this.gate;
+    this.text = change(this.text);
+    return this.text;
+  }
+
+  finish(): void {
+    this.release();
   }
 }
 
@@ -173,6 +199,59 @@ describe('MindmapNoteSession', () => {
         await session.undo(snapshot, file);
         expect(file.text).toBe(changedAfterDelete);
       });
+    });
+  });
+
+  describe('GIVEN an edit still being written when the view closes the note and loads another one', () => {
+    const OTHER_NOTE = noteText('---', 'organic-mindmap: 1', '---', '- Other map ^other');
+
+    interface SwitchedMidEdit {
+      readonly session: MindmapNoteSession;
+      readonly file: InFlightNoteFile;
+      readonly edit: Promise<unknown>;
+      /** A position save the map queued behind the edit before the switch. */
+      readonly queuedSave: Promise<unknown>;
+    }
+
+    async function switchedMidEdit(): Promise<SwitchedMidEdit> {
+      const session = new MindmapNoteSession();
+      session.load(NOTE);
+      const file = new InFlightNoteFile(NOTE);
+      const edit = session.applyEdit({ type: 'add', parentId: 'root', text: 'New idea' }, file);
+      const queuedSave = session.savePositions({ c1: { dx: 1, dy: 2 } }, file);
+      await file.started;
+      session.close();
+      session.load(OTHER_NOTE);
+      return { session, file, edit, queuedSave };
+    }
+
+    async function finishWrites({ file, edit, queuedSave }: SwitchedMidEdit): Promise<void> {
+      file.finish();
+      await Promise.allSettled([edit, queuedSave]);
+    }
+
+    it('WHEN the writes finish THEN the session keeps showing the other note', async () => {
+      const switched = await switchedMidEdit();
+      await finishWrites(switched);
+      expect(switched.session.note?.text).toBe(OTHER_NOTE);
+    });
+
+    it('WHEN the writes finish THEN the edit rejects as closed', async () => {
+      const switched = await switchedMidEdit();
+      await finishWrites(switched);
+      await expect(switched.edit).rejects.toBeInstanceOf(NoteClosedError);
+    });
+
+    it('WHEN the writes finish THEN the queued position save rejects as closed', async () => {
+      const switched = await switchedMidEdit();
+      await finishWrites(switched);
+      await expect(switched.queuedSave).rejects.toBeInstanceOf(NoteClosedError);
+    });
+
+    it('WHEN the writes finish THEN the queued position save did not write the file', async () => {
+      const switched = await switchedMidEdit();
+      await finishWrites(switched);
+      expect(readNote(switched.file.text).positions).toEqual({});
     });
   });
 
