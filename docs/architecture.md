@@ -247,6 +247,12 @@ page and loads none of the runner code or CSS.
 - `src/main.ts` is the Obsidian entry (`Plugin` subclass). Logic goes into sibling modules that do not import
   `obsidian` (e.g. `commands.ts`, `statusMessage.ts`) so Vitest covers them without an Obsidian runtime
   (`obsidian` is a types-only package outside the app).
+- `src/mindmapNote/` is the mindmap note format (`next-steps-prior-to-obsidian.md` "Phase 1a"), text in, text out:
+  `isMindmapNote`, `readMindmapNote` (note -> `MindmapNote`: nodes, saved parent offsets, or a plain-language
+  problem), `MindmapNote.applyEdit` / `setPosition` (new note text, changing only the touched lines), and
+  `newMindmapNoteText`. It parses the text itself (WHY-NOT the metadata cache: it lags behind typing and is missing
+  in unit tests). Ids generated for items without a block id only exist in that read and reach the file with the
+  next write, so writes always go through the `MindmapNote` the map was drawn from.
 - Obsidian E2E (`npm run test:e2e:obsidian`, `e2e/*.e2e.ts`): `scripts/run-e2e.sh` provisions a pinned Obsidian
   (`scripts/setup-obsidian-bin.sh`, Linux download into `.tmp/obsidian-e2e/bin/`, or `OBSIDIAN_PATH`), seeds
   `.dev-vault/` with the built plugin, then `e2e/obsidianHarness.ts` spawns Obsidian on a throwaway copy of the vault
