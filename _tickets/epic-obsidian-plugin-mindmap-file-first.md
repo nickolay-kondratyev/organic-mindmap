@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-26T23:33:46Z
 id: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
 title: "Epic: Obsidian plugin, mindmap file first"
-status: open
+status: closed
 deps: [nid_b83apppr45lbst30ia592ohg0_e, nid_eqq17z13ui62faww955vkjdjp_e, nid_uevv14z32jm6npvl0gwef6kpy_e, nid_iexvo4oqwq038twvy9od9gm2b_e, nid_89ap39gl425o98g5qnhkuszdl_e, nid_lmtjqrjec483zha67vaaeydez_e, nid_kjtran7bnslnah9gj2fjr69rx_e]
 links: []
 created_iso: 2026-10-26T22:24:59Z
-status_updated_iso: 2026-10-26T22:24:59Z
+status_updated_iso: 2026-10-26T23:33:46Z
 type: epic
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
