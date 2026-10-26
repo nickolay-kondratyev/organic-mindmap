@@ -1,15 +1,16 @@
 ---
 id: nid_kjtran7bnslnah9gj2fjr69rx_e
 title: "Plugin: keep dragged positions in the file and delete from the right-click menu"
-status: open
+status: in_progress
 deps: [nid_lmtjqrjec483zha67vaaeydez_e, nid_iexvo4oqwq038twvy9od9gm2b_e, nid_89ap39gl425o98g5qnhkuszdl_e]
 links: []
 created_iso: 2026-10-26T22:25:00Z
-status_updated_iso: 2026-10-26T22:25:00Z
+status_updated_iso: 2026-10-26T23:24:02Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
 parent: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-kjtran7b
 tags: [obsidian-mindmap-file]
 ---
 
