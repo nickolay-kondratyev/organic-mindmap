@@ -50,9 +50,7 @@ mkdir -p "${REPO_ROOT}/.tmp"
 echo "setup-dev-vault: building plugin (log: .tmp/plugin-build.log)" >&2
 npm run build > "${REPO_ROOT}/.tmp/plugin-build.log" 2>&1
 
+# The build writes a complete plugin folder (main.js, manifest.json, styles.css) to dist/.
 mkdir -p "${PLUGIN_DIR}"
-cp "${PLUGIN_ROOT}/main.js" "${REPO_ROOT}/manifest.json" "${PLUGIN_DIR}/"
-if [[ -f "${PLUGIN_ROOT}/styles.css" ]]; then
-	cp "${PLUGIN_ROOT}/styles.css" "${PLUGIN_DIR}/"
-fi
+cp "${PLUGIN_ROOT}/dist/"* "${PLUGIN_DIR}/"
 echo "setup-dev-vault: plugin installed at path=[${PLUGIN_DIR}]" >&2

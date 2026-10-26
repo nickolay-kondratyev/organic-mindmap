@@ -8,6 +8,6 @@ test-results/
 playwright-report/
 dist-demo/
 coverage/
-# Obsidian plugin: bundle output and the local dev vault (seeded by obsidian-plugin/scripts/setup-dev-vault.sh).
-obsidian-plugin/main.js
+# Obsidian plugin: the built plugin folder is obsidian-plugin/dist/ (covered by dist/ above); the local dev vault
+# is seeded by obsidian-plugin/scripts/setup-dev-vault.sh.
 .dev-vault/

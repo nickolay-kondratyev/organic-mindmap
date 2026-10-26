@@ -40,12 +40,18 @@ organic-mindmap: 1
 
 ```bash
 npm install
-npm run build:plugin          # bundles obsidian-plugin/main.js
+npm run build                 # builds the library and the installable plugin folder obsidian-plugin/dist/
 ```
 
-Copy `obsidian-plugin/main.js`, `obsidian-plugin/styles.css` and `manifest.json` into `<your vault>/.obsidian/plugins/organic-mindmap/`, then
-enable "Organic Mindmap" under Settings > Community plugins. Or `npm run setup:dev-vault` and open
-`obsidian-plugin/.dev-vault/` as a vault (the plugin is already installed there).
+`obsidian-plugin/dist/` holds `main.js`, `manifest.json` and `styles.css`. Link it into your vault (or copy it there),
+then enable "Organic Mindmap" under Settings > Community plugins:
+
+```bash
+ln -s "$PWD/obsidian-plugin/dist" "<your vault>/.obsidian/plugins/organic-mindmap"
+```
+
+`npm run dev:plugin` rebuilds `dist/` on every source change; reload the plugin in Obsidian to pick it up. Or
+`npm run setup:dev-vault` and open `obsidian-plugin/.dev-vault/` as a vault (the plugin is already installed there).
 
 ## Repo layout
 
@@ -54,7 +60,7 @@ npm workspaces monorepo:
 | Package | Path | What |
 |---|---|---|
 | `organic-mindmap` | [`core/`](core/README.md) | The mindmap library (framework-free core + React wrapper), its demo and tests. Usable on its own; knows nothing about Obsidian. |
-| plugin | `obsidian-plugin/` | The Obsidian plugin, built on the library's public API. Bundles to `obsidian-plugin/main.js`; `manifest.json` / `versions.json` live at the repo root (Obsidian's release flow). |
+| plugin | `obsidian-plugin/` | The Obsidian plugin, built on the library's public API. Builds the installable plugin folder `obsidian-plugin/dist/`; `manifest.json` / `versions.json` live at the repo root (Obsidian's release flow). |
 
 Requirements: [spec.md](spec.md). Architecture: [docs/architecture.md](docs/architecture.md).
 

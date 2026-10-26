@@ -1,7 +1,7 @@
 {
   "name": "organic-mindmap-obsidian-plugin",
   "private": true,
-  "description": "The Organic Mindmap Obsidian plugin. Bundles to main.js next to this file; manifest.json lives at the repo root.",
+  "description": "The Organic Mindmap Obsidian plugin. Builds an installable plugin folder dist/ (main.js, manifest.json from the repo root, styles.css).",
   "license": "MIT",
   "type": "module",
   "scripts": {
