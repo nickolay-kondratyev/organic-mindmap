@@ -11,15 +11,14 @@ import {
   type NodeOffsets,
 } from 'organic-mindmap';
 import type { MindmapNote } from '../mindmapNote';
+import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
 import { firstLinkTarget } from './linkTarget';
-import { MindmapNoteSession, type NoteTextFile, type WriteSnapshot } from './noteSession';
+import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type WriteSnapshot } from './noteSession';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
 
 export const OPEN_AS_MARKDOWN_LABEL = 'Open as Markdown';
 const VIEW_ICON = 'git-fork';
-const DELETE_LABEL = 'Delete';
 const DELETED_MESSAGE = 'Deleted from the mindmap.';
-const UNDO_LABEL = 'Undo';
 const UNDO_CHANGED_SINCE_MESSAGE = 'Not undone: the note changed after the delete. Use the Markdown view or file recovery to get it back.';
 const UNDO_FAILED_PREFIX = 'Could not undo the delete:';
 /** Long enough to notice the delete and reach "Undo". */
@@ -95,12 +94,15 @@ export class MindmapNoteView extends FileView {
   }
 
   override async onUnloadFile(file: TFile): Promise<void> {
+    // The same view (and session) shows the next file: writes still in flight for this one must not load into it.
+    this.session.close();
     this.unmount();
     this.contentEl.empty();
     await super.onUnloadFile(file);
   }
 
   override onunload(): void {
+    this.session.close();
     this.unmount();
     super.onunload();
   }
@@ -196,8 +198,9 @@ export class MindmapNoteView extends FileView {
       if (request.type === 'delete') this.offerUndo(snapshot);
       return data;
     } catch (error) {
-      // A stale refusal reloaded the session from the file's newer text: show it.
-      this.render();
+      // A stale refusal reloaded the session from the file's newer text: show it. A closed note has nothing to show
+      // (the map that asked is gone and ignores the answer).
+      if (!(error instanceof NoteClosedError)) this.render();
       throw error;
     }
   }
@@ -208,6 +211,7 @@ export class MindmapNoteView extends FileView {
       await this.session.savePositions(offsets, this.noteFile());
       this.shownNote = this.session.note;
     } catch (error) {
+      if (error instanceof NoteClosedError) return;
       // The map already shows the drop; show the file's state again (positions included) and say why.
       this.render();
       new Notice(errorMessage(error));
@@ -248,6 +252,7 @@ export class MindmapNoteView extends FileView {
       this.render();
       if (result === 'changedSince') new Notice(UNDO_CHANGED_SINCE_MESSAGE);
     } catch (error) {
+      if (error instanceof NoteClosedError) return;
       // E.g. the file could not be written: without this the click would fail silently.
       new Notice(`${UNDO_FAILED_PREFIX} ${errorMessage(error)}`);
     }

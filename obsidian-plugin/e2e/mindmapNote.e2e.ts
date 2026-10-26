@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { HANDLE_GAP, HANDLE_RADIUS, LABEL_EDITOR_ACCESSIBLE_NAME, type MindmapData, type NodeBox } from 'organic-mindmap';
 import { CREATE_MINDMAP_COMMAND } from '../src/commands';
+import { DELETE_LABEL, UNDO_LABEL } from '../src/mapView/deleteLabels';
 import { MINDMAP_FILE_SUFFIX, NEW_NOTE_ROOT_TEXT } from '../src/mapView/newNote';
 import { MINDMAP_VIEW_TYPE } from '../src/mapView/viewSwitch';
 import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
@@ -9,8 +10,9 @@ import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
 /**
  * Key journeys of the mindmap note (ticket nid_lmtjqrjec483zha67vaaeydez_e): create -> the map shows the root; add a
  * child on the map -> the file contains it; rename a linked note -> the mindmap's link is updated and the map shows
- * it; drag a node, reopen the note -> the node is where it was left (ticket nid_kjtran7bnslnah9gj2fjr69rx_e).
- * Everything else (delete + undo included) is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
+ * it; drag a node, reopen the note -> the node is where it was left (ticket nid_kjtran7bnslnah9gj2fjr69rx_e); delete a
+ * node from its right-click menu, then "Undo" -> the note text is back (ticket nid_48incacjmuach0kymaasz36du_e).
+ * Everything else is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
  * import `obsidian`.
  */
 test.describe.configure({ mode: 'serial' });
@@ -24,6 +26,9 @@ const LINKING_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Project ^root',
 const POSITIONS_MAP_PATH = 'Positions map.md';
 const POSITIONS_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Trip ^root', '\t- Packing ^pack', '\t- Route ^route', ''].join('\n');
 const DRAGGED_NODE_ID = 'pack';
+const DELETE_MAP_PATH = 'Delete map.md';
+const DELETE_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Garden ^root', '\t- Weeds ^weeds', '\t- Roses ^roses', ''].join('\n');
+const DELETED_NODE_ID = 'weeds';
 /** Screen px to drag the node straight down; far enough to be a clear move, into empty canvas. */
 const DRAG_DOWN_PX = 120;
 const DRAG_STEPS = 12;
@@ -44,6 +49,7 @@ test.beforeAll(async () => {
       [LINKED_NOTE_PATH]: '# Linked note\n',
       [LINKING_MAP_PATH]: LINKING_MAP_TEXT,
       [POSITIONS_MAP_PATH]: POSITIONS_MAP_TEXT,
+      [DELETE_MAP_PATH]: DELETE_MAP_TEXT,
     },
   });
   page = harness.page;
@@ -191,5 +197,28 @@ test.describe('GIVEN a node dragged to a new spot on the map', () => {
         return Math.max(Math.abs(reopened.dx - draggedOffset.dx), Math.abs(reopened.dy - draggedOffset.dy));
       })
       .toBeLessThanOrEqual(POSITION_TOLERANCE_PX);
+  });
+});
+
+test.describe('GIVEN a mindmap note open as a map', () => {
+  let textBeforeDelete: string | null;
+
+  test.beforeAll(async () => {
+    await harness.openFile(DELETE_MAP_PATH);
+    await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
+    await offsetFromParent(DELETED_NODE_ID);
+    textBeforeDelete = await vaultFileText(DELETE_MAP_PATH);
+  });
+
+  test('WHEN "Delete" is chosen from a node\'s right-click menu THEN the item is gone from the file', async () => {
+    const node = await nodeCenterOnPage(DELETED_NODE_ID);
+    await page.mouse.click(node.x, node.y, { button: 'right' });
+    await page.locator('.menu').getByText(DELETE_LABEL, { exact: true }).click();
+    await expect.poll(() => vaultFileText(DELETE_MAP_PATH)).not.toContain(`^${DELETED_NODE_ID}`);
+  });
+
+  test('WHEN "Undo" is clicked on the delete notice THEN the file text equals the text before the delete', async () => {
+    await page.locator('.notice').getByRole('button', { name: UNDO_LABEL }).click();
+    await expect.poll(() => vaultFileText(DELETE_MAP_PATH)).toBe(textBeforeDelete);
   });
 });
