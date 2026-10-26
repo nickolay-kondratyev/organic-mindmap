@@ -5,6 +5,8 @@ import esbuild from 'esbuild';
 import builtins from 'builtin-modules';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// Node strips the types from this .ts import at runtime (Node >= 22.6); one alias table for tsconfig, esbuild and Vitest.
+import { CORE_ALIAS } from './coreAlias.ts';
 
 const PACKAGE_ROOT = path.dirname(fileURLToPath(import.meta.url));
 const watch = process.argv.includes('--watch');
@@ -19,8 +21,7 @@ const context = await esbuild.context({
   logLevel: 'info',
   sourcemap: watch ? 'inline' : false,
   treeShaking: true,
-  // Same table as tsconfig `paths` and vitest.config.ts; see coreAlias.ts for WHY the source entry.
-  alias: { 'organic-mindmap': path.join(PACKAGE_ROOT, '../core/src/index.ts') },
+  alias: CORE_ALIAS,
   external: [
     'obsidian',
     'electron',
