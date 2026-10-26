@@ -35,7 +35,10 @@ export interface MountOptions {
   readonly onEditStatusChange?: (status: EditStatus) => void;
   /** View changes made by the library (pan, zoom, API zoom/reset, the initial fit-to-content); not fired for `setView`. */
   readonly onViewChange?: (view: MindmapView) => void;
-  /** Node drags (spec I2), once per drop; the position stays applied across later `setData` calls. */
+  /**
+   * Node drags (spec I2), once per drop, as an absolute scene point. The node then keeps its place relative to its
+   * parent across later `setData` calls; to save positions use `onNodeOffsetsChange`.
+   */
   readonly onNodeReposition?: (event: NodeRepositionEvent) => void;
   /**
    * Positions the user gave nodes earlier (e.g. saved in a file), as offsets from each node's parent, so they land

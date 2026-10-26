@@ -164,7 +164,8 @@ branches per pointer move, over a frozen base scene.
   offset from the parent's placed centre (`Scene.placedPositions`: before the push-apart, so a pushed parent never
   shifts a saved offset), and re-runs `resolveCollisions` with the overridden subtrees pinned in drop order (no
   overrides = pipeline output untouched). Descendants' offsets travel with a drop (negated `dx` when it mirrors), and a
-  confirmed `move` drops the moved subtree's overrides (reported too). Crossing the parent's centre line mirrors the subtree around the dragged node:
+  confirmed `move` drops the moved subtree's overrides (reported too). Crossing the parent's centre line mirrors the
+  subtree around the dragged node:
   `subtreeMoveTo` is the single flip rule used by the drag preview, the stored drop and `applyPositionOverrides`.
   Hover buttons: "+" on the outer side (both sides for the root) opens the inline editor on a local draft child
   (`DRAFT_NODE_ID`, not sent until Enter). While they show, the hovered node keeps its hover over its hover area
