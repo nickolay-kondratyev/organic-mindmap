@@ -19,7 +19,7 @@ import type { ViewController } from '../view/viewController';
 import { editorAllowed, shownHandles } from './editAffordances';
 import { nodeAt, nodeBoxOf, pointerTargetAt, sameHandle, type NodeHandle, type PointerTarget } from './hitTest';
 import { InlineLabelEditor, type LabelEditorPlacement } from './inlineLabelEditor';
-import { addDraftRequest, DRAFT_NODE_ID, LocalEditState } from './localEditState';
+import { addDraftRequest, DRAFT_NODE_ID, isTransient, LocalEditState } from './localEditState';
 import { NoticeBanner } from './noticeBanner';
 import { nodeClickEvent, type ModifierKeys, type NodeClickEvent } from './nodeClickEvent';
 import { clickedNodeId, PointerGesture, type PressTarget } from './pointerGesture';
@@ -504,11 +504,6 @@ function hoveredNodeOf(target: PointerTarget): NodeId | null {
     case 'empty':
       return null;
   }
-}
-
-/** Preview and draft nodes are not real yet: they cannot be dragged, edited or dropped onto. */
-function isTransient(nodeId: NodeId): boolean {
-  return nodeId === PENDING_NODE_ID || nodeId === DRAFT_NODE_ID;
 }
 
 /**
