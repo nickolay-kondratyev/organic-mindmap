@@ -15,6 +15,7 @@
     "test:e2e": "bash scripts/run-e2e.sh"
   },
   "dependencies": {
+    "monkey-around": "3.0.0",
     "organic-mindmap": "*"
   },
   "devDependencies": {

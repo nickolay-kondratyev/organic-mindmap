@@ -16,7 +16,8 @@
     "allowImportingTsExtensions": true,
     "types": ["node", "vitest/globals"],
     "paths": {
-      "organic-mindmap": ["../core/src/index.ts"]
+      "organic-mindmap": ["../core/src/index.ts"],
+      "organic-mindmap/fonts/kalam-latin-400-normal.ttf": ["../core/assets/fonts/kalam/latin-400-normal.ttf"]
     }
   },
   "include": ["src", "e2e", "*.config.ts"]

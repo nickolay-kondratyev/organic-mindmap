@@ -35,6 +35,11 @@ branch and reports too). Save that object as-is and hand it back as `nodeOffsets
 its parent after the auto layout moves the parent; ids not on the map and entries without numeric `dx`/`dy` are
 ignored. `onNodeReposition({ nodeId, position })` still reports each drop as an absolute scene point.
 
+Fonts: labels use Kalam, fetched by default from the CDN URLs in the config (`text.node.url`, `text.branch.url`).
+Hosts that must not touch the network pass `fontFetcher(url) => Promise<ArrayBuffer>` (mount option) and serve the
+bundled copy the package publishes at `organic-mindmap/fonts/kalam-latin-400-normal.ttf` (SIL OFL,
+`assets/fonts/kalam/OFL.txt`); it is the same build the default URLs point at.
+
 ## Demo runner
 
 ```bash

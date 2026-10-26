@@ -5,7 +5,8 @@
   "license": "MIT",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "assets/fonts"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,7 +18,8 @@
     "./react": {
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react.js"
-    }
+    },
+    "./fonts/kalam-latin-400-normal.ttf": "./assets/fonts/kalam/latin-400-normal.ttf"
   },
   "scripts": {
     "prepare": "node scripts/install-browsers.mjs",
