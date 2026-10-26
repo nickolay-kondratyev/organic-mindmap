@@ -1,15 +1,16 @@
 ---
 id: nid_b83apppr45lbst30ia592ohg0_e
 title: "[SOLO] Monorepo: move the library into core/ as package organic-mindmap"
-status: open
+status: in_progress
 deps: []
 links: []
 created_iso: 2026-10-26T22:25:00Z
-status_updated_iso: 2026-10-26T22:25:00Z
+status_updated_iso: 2026-10-26T22:32:16Z
 type: task
 priority: 1
 assignee: CC_WITH-nickolaykondratyev
 parent: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-b83apppr
 tags: [obsidian-mindmap-file, solo]
 ---
 
