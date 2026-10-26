@@ -160,7 +160,7 @@ exists; that time is now. Proposal to keep the library simple:
 
 - "Generate large map" (N nodes, fan-out, depth): for speed, collapse, and the "+N more" node.
 - "Paste Markdown": turns headings into a map, so heading mode can be felt and tuned in the browser.
-  Small throwaway parser in `demo/`; the plugin uses Obsidian's own heading list instead (duplication is fine,
+  Small throwaway parser in `core/demo/`; the plugin uses Obsidian's own heading list instead (duplication is fine,
   it is low-risk glue).
 
 ### 0.8 Packaging
@@ -210,7 +210,7 @@ the nearest heading above it with a lower level, so skipped levels (H1 -> H3) ju
 before the first heading is ignored. Source: `metadataCache.getFileCache(file).headings` (level, text,
 position), refreshed on the cache's `changed` event, debounced.
 
-**First launch (decided): navigate + move.** Click jumps to the heading, the map follows the active note, the
+**Heading map launch (decided): navigate + move.** Click jumps to the heading, the map follows the active note, the
 heading under the cursor is highlighted, and dragging a node onto another heading moves that section in the
 Markdown.
 

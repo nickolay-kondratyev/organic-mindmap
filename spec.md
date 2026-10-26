@@ -231,7 +231,7 @@ A small React app shipped with the library.
 - D7. Paste Markdown: the runner shows a pasted note's headings as the map, mapped the way the Obsidian heading map
   will: the root is the single H1 if there is exactly one, else a fixed title ("Pasted note"); each heading's parent
   is the nearest heading above it with a lower level (skipped levels attach to that heading); text before the first
-  heading is ignored; `#` lines inside fenced code blocks are not headings. The parser lives in `demo/` only (the
+  heading is ignored; `#` lines inside fenced code blocks are not headings. The parser lives in `core/demo/` only (the
   library stays Markdown-free). "Reset map" (D6) goes back to the reference data.
 - D8. Host hooks are visible: the runner highlights the clicked node (I7, I8) and shows which node and keys the
   host was told.
