@@ -1,16 +1,16 @@
 ---
+closed_iso: 2026-10-26T23:03:42Z
 id: nid_uevv14z32jm6npvl0gwef6kpy_e
 title: "Mindmap file format: read a mindmap note and apply map edits to its text"
-status: in_progress
+status: closed
 deps: [nid_eqq17z13ui62faww955vkjdjp_e]
 links: []
 created_iso: 2026-10-26T22:25:00Z
-status_updated_iso: 2026-10-26T22:50:30Z
+status_updated_iso: 2026-10-26T23:03:42Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
 parent: nid_h4bhoi9jvbh3zny2ldnuxb0sq_e
-pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-uevv14z3
 tags: [obsidian-mindmap-file]
 ---
 
