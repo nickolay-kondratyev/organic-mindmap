@@ -7,6 +7,7 @@ import { CanvasInteractions } from './interaction/canvasInteractions';
 import type { NodeClickEvent } from './interaction/nodeClickEvent';
 import type { NodeContextMenuEvent } from './interaction/nodeContextMenuEvent';
 import type { NodeRepositionEvent } from './interaction/repositionEvent';
+import type { NodeOffsets } from './layout/positionOverrides';
 import type { MindmapData, NodeId } from './model/node';
 import { drawScene, type Viewport } from './render/canvasRenderer';
 import type { Scene } from './render/scene';
@@ -34,8 +35,22 @@ export interface MountOptions {
   readonly onEditStatusChange?: (status: EditStatus) => void;
   /** View changes made by the library (pan, zoom, API zoom/reset, the initial fit-to-content); not fired for `setView`. */
   readonly onViewChange?: (view: MindmapView) => void;
-  /** Node drags (spec I2), once per drop; the position stays applied across later `setData` calls. */
+  /**
+   * Node drags (spec I2), once per drop, as an absolute scene point. The node then keeps its place relative to its
+   * parent across later `setData` calls; to save positions use `onNodeOffsetsChange`.
+   */
   readonly onNodeReposition?: (event: NodeRepositionEvent) => void;
+  /**
+   * Positions the user gave nodes earlier (e.g. saved in a file), as offsets from each node's parent, so they land
+   * right even when the auto layout puts the parent somewhere new. Ids not on the map are ignored.
+   */
+  readonly nodeOffsets?: NodeOffsets;
+  /**
+   * Every user-placed node, after each change the user makes (a drop on empty space, or a confirmed reparent, which
+   * clears the moved branch's positions). Save it as-is and pass it back as `nodeOffsets` to restore the layout.
+   * Not fired for `setNodeOffsets`.
+   */
+  readonly onNodeOffsetsChange?: (offsets: NodeOffsets) => void;
   /**
    * A click on a node (press and release without a drag), with the modifier keys, e.g. to jump to what the node
    * stands for. Not fired for drags, pans or hover buttons. Fired for every click, so a double-click fires twice.
@@ -60,6 +75,8 @@ export interface MindmapHandle {
   setData(data: MindmapData): void;
   setConfig(config: PartialMindmapConfig | undefined): void;
   setExtensions(extensions: Partial<MindmapExtensions> | undefined): void;
+  /** Replaces the user-placed node positions (see `MountOptions.nodeOffsets`); `{}` puts every node back on auto layout. */
+  setNodeOffsets(offsets: NodeOffsets): void;
   /** Size in CSS pixels; the backing store is scaled by `devicePixelRatio`. */
   resize(width: number, height: number, devicePixelRatio: number): void;
   /** Font loading status (spec L6); the same value `onFontStatusChange` last reported. */
@@ -141,6 +158,7 @@ class CanvasMount implements MindmapHandle {
       cssFontFamily: (font) => this.cssFonts.familyFor(font),
       requestRepaint: () => this.scheduler.request(),
       onNodeReposition: (event) => options.onNodeReposition?.(event),
+      onNodeOffsetsChange: (offsets) => options.onNodeOffsetsChange?.(offsets),
       onNodeClick: (event) => options.onNodeClick?.(event),
       ...(options.onNodeContextMenu === undefined ? {} : { onNodeContextMenu: options.onNodeContextMenu }),
       // Same path as a host `setConfig`, so an in-map change can never skip what applying settings involves.
@@ -149,6 +167,7 @@ class CanvasMount implements MindmapHandle {
         options.onConfigChange?.(config);
       },
     });
+    if (options.nodeOffsets !== undefined) this.interactions.setNodeOffsets(options.nodeOffsets);
     // Size the backing store from the canvas's CSS box right away so the first paint is correct even for
     // hosts that never call `resize` (the React wrapper does, via ResizeObserver).
     this.viewport = { width: canvas.clientWidth, height: canvas.clientHeight, devicePixelRatio: window.devicePixelRatio };
@@ -169,6 +188,10 @@ class CanvasMount implements MindmapHandle {
   setExtensions(extensions: Partial<MindmapExtensions> | undefined): void {
     this.extensions = resolveExtensions(extensions);
     this.scheduler.request();
+  }
+
+  setNodeOffsets(offsets: NodeOffsets): void {
+    this.interactions.setNodeOffsets(offsets);
   }
 
   resize(width: number, height: number, devicePixelRatio: number): void {
