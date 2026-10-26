@@ -1,6 +1,6 @@
 import { applyEdit } from '../edit/applyEdit';
 import type { AddEditRequest, EditRequest } from '../edit/editRequest';
-import { EDIT_BLOCKED_REASON, type EditSession, type EditStatus } from '../edit/editSession';
+import { EDIT_BLOCKED_REASON, PENDING_NODE_ID, type EditSession, type EditStatus } from '../edit/editSession';
 import { findEditProblem } from '../edit/editValidation';
 import type { NodePositions } from '../layout/layoutTypes';
 import {
@@ -17,6 +17,11 @@ import type { NodeRepositionEvent } from './repositionEvent';
 
 /** Id of the local, not-yet-sent child shown while its label is typed (the host picks the real id). */
 export const DRAFT_NODE_ID: NodeId = 'organic-mindmap:draft-node';
+
+/** Preview and draft nodes are not real yet: they cannot be dragged, edited, dropped onto or reported to the host. */
+export function isTransient(nodeId: NodeId): boolean {
+  return nodeId === PENDING_NODE_ID || nodeId === DRAFT_NODE_ID;
+}
 
 /** The part of a painted scene a drop is measured against. */
 export interface DropScene {

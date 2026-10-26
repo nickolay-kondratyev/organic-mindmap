@@ -12,6 +12,7 @@ import {
   type MindmapHandle,
   type MindmapView,
   type NodeClickEvent,
+  type NodeContextMenuEvent,
   type NodeOffsets,
   type NodeRepositionEvent,
   type PartialMindmapConfig,
@@ -42,6 +43,11 @@ export interface MindmapProps {
   readonly onNodeOffsetsChange?: (offsets: NodeOffsets) => void;
   /** A click on a node with its modifier keys (see `MountOptions.onNodeClick`); a double-click fires twice. */
   readonly onNodeClick?: (event: NodeClickEvent) => void;
+  /**
+   * A right-click on a node (see `MountOptions.onNodeContextMenu`). Whether it is set is read once at mount (it decides
+   * if nodes suppress the browser's menu); later renders only swap which function is called.
+   */
+  readonly onNodeContextMenu?: (event: NodeContextMenuEvent) => void;
   /** A setting the user changed inside the map (see `MountOptions.onConfigChange`); store it and pass it back as `config`. */
   readonly onConfigChange?: (config: MindmapConfig) => void;
 }
@@ -70,6 +76,7 @@ type CallbackProp =
   | 'onNodeReposition'
   | 'onNodeOffsetsChange'
   | 'onNodeClick'
+  | 'onNodeContextMenu'
   | 'onFontStatusChange'
   | 'onConfigChange';
 /** Every callback key present (possibly `undefined`), so the latest props can be copied in one assignment. */
@@ -96,6 +103,7 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
     onNodeReposition,
     onNodeOffsetsChange,
     onNodeClick,
+    onNodeContextMenu,
     onFontStatusChange,
     onConfigChange,
   },
@@ -111,6 +119,7 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
     onNodeReposition,
     onNodeOffsetsChange,
     onNodeClick,
+    onNodeContextMenu,
     onFontStatusChange,
     onConfigChange,
   };
@@ -136,6 +145,9 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
       onNodeReposition: (event) => callbacksRef.current.onNodeReposition?.(event),
       onNodeOffsetsChange: (offsets) => callbacksRef.current.onNodeOffsetsChange?.(offsets),
       onNodeClick: (event) => callbacksRef.current.onNodeClick?.(event),
+      ...(onNodeContextMenu === undefined
+        ? {}
+        : { onNodeContextMenu: (event: NodeContextMenuEvent) => callbacksRef.current.onNodeContextMenu?.(event) }),
       onFontStatusChange: (status) => callbacksRef.current.onFontStatusChange?.(status),
       onConfigChange: (next) => callbacksRef.current.onConfigChange?.(next),
     });

@@ -215,6 +215,10 @@ structural edit is only shown as done once the host has actually done it.
   double-click rename editor, giving a move-only map; moving by drag still works through I3/I5.
   `interaction.allowDelete` is reserved for a future in-map delete control (the map has none, I4). The switches gate
   only the map's own controls, never requests the host sends itself (`requestEdit`).
+- I11. Node right-click: a right-click on a node (root included) reports the node id and the viewport (client) point
+  via `onNodeContextMenu` (mount option and `<Mindmap>` prop), so the host can show its own menu there (e.g. delete
+  via `requestEdit`); the library draws no menu. While the hook is set, the browser's context menu is suppressed on
+  nodes only; bare canvas and preview/draft nodes keep it and do not report.
 
 ## 6a. Demo runner (in scope for v1)
 

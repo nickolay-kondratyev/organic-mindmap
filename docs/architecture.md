@@ -58,7 +58,7 @@ branches per pointer move, over a frozen base scene.
 | `extensions.ts` | Bundle of code-level extension points | `MindmapExtensions`, `DEFAULT_EXTENSIONS` |
 | `edit/` | Request -> confirm protocol (I5), default host (I6) | `EditRequest`, `EditHandler`, `EditSession`, `findEditProblem`, `applyEdit`, `InMemoryHost` |
 | `view/` | Library-local pan/zoom (I1) | `MindmapView`, `ViewController` |
-| `interaction/` | Canvas pointer interactions (I1-I5) | `CanvasInteractions` (DOM wiring), `PointerGesture` + `DRAG_THRESHOLD_PX` + `clickedNodeId`, `hitTest` (`nodeAt`, `nodeHandles`, `inHoverArea`, `pointerTargetAt`), `editAffordances` (`shownHandles`, `editorAllowed`), `NodeClickEvent`, `InlineLabelEditor`, `NoticeBanner`, `ReparentConfirmation` + `ReparentDialog`, `NodeRepositionEvent` |
+| `interaction/` | Canvas pointer interactions (I1-I5) | `CanvasInteractions` (DOM wiring), `PointerGesture` + `DRAG_THRESHOLD_PX` + `clickedNodeId`, `hitTest` (`nodeAt`, `nodeHandles`, `inHoverArea`, `pointerTargetAt`), `editAffordances` (`shownHandles`, `editorAllowed`), `NodeClickEvent`, `NodeContextMenuEvent` + `contextMenuNodeId`, `InlineLabelEditor`, `NoticeBanner`, `ReparentConfirmation` + `ReparentDialog`, `NodeRepositionEvent` |
 | `mount.ts` | Imperative entry point | `mountMindmap` -> `MindmapHandle` |
 
 ## Config vs extensions
@@ -178,8 +178,11 @@ branches per pointer move, over a frozen base scene.
   hover area and bare canvas are not node clicks (`clickedNodeId`). Click rule: every click is reported at once, so a
   double-click is two clicks plus the rename when renaming is on. WHY-NOT delay clicks by the double-click
   interval: it lags every navigation click, while jumping to the same place twice is harmless (and move-only maps
-  have no rename anyway). Host highlight (`setHighlightedNode`): a ring in `theme.color.highlight` painted by the
-  overlay, so it never rebuilds the scene; an unknown id draws nothing. DOM overlays (`<input>` editor, `role="alert"` notice with the rejection or
+  have no rename anyway). Node right-clicks (`onNodeContextMenu`, `NodeContextMenuEvent` with node id + client point,
+  spec I11): only a real node under the pointer reports and suppresses the browser's menu (`contextMenuNodeId`), and
+  only while the hook is set; bare canvas, the "+" and preview/draft nodes keep the browser's menu. The library draws
+  no menu: hosts show their own and send `delete` via `requestEdit`. Host highlight (`setHighlightedNode`): a ring
+  in `theme.color.highlight` painted by the overlay, so it never rebuilds the scene; an unknown id draws nothing. DOM overlays (`<input>` editor, `role="alert"` notice with the rejection or
   refusal reason, `role="dialog"` reparent question) are created lazily as siblings right after the canvas, positioned via `offsetLeft/Top`. A
   rejected edit sent from the editor reopens it with the typed label (I5.4).
   `MindmapHandle.getNodeScreenBox` / `getData` expose node boxes and confirmed data (host UI, E2E).
