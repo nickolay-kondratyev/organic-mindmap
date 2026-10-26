@@ -27,7 +27,10 @@ export default class OrganicMindmapPlugin extends Plugin {
     this.addCommand({
       id: CREATE_MINDMAP_COMMAND.id,
       name: CREATE_MINDMAP_COMMAND.name,
-      callback: () => void this.createMindmapNote(),
+      callback: () =>
+        void this.createMindmapNote().catch((error: unknown) => {
+          new Notice(`Could not create the mindmap note: ${error instanceof Error ? error.message : String(error)}`);
+        }),
     });
     this.addCommand({
       id: TOGGLE_MINDMAP_VIEW_COMMAND.id,
@@ -47,11 +50,21 @@ export default class OrganicMindmapPlugin extends Plugin {
     const plugin = this;
     const original = WorkspaceLeaf.prototype.setViewState;
     WorkspaceLeaf.prototype.setViewState = async function (this: WorkspaceLeaf, viewState: ViewState, eState?: unknown) {
-      return original.call(this, await plugin.routedViewState(this, viewState), eState);
+      return original.call(this, await plugin.routedViewStateOrRequested(this, viewState), eState);
     };
     this.register(() => {
       WorkspaceLeaf.prototype.setViewState = original;
     });
+  }
+
+  /** Routing must never block opening a file: a failed detection (e.g. the file vanished mid-read) opens as requested. */
+  private async routedViewStateOrRequested(leaf: WorkspaceLeaf, viewState: ViewState): Promise<ViewState> {
+    try {
+      return await this.routedViewState(leaf, viewState);
+    } catch (error) {
+      console.error('organic-mindmap: could not decide the view for the note, opening it as requested', error);
+      return viewState;
+    }
   }
 
   private async routedViewState(leaf: WorkspaceLeaf, viewState: ViewState): Promise<ViewState> {
