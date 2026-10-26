@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-26T22:00:00Z
 id: nid_jhuq7jgjalnz6mv72937ivl1k_e
 title: "Decide: how should the Obsidian plugin install this library (tag has no built files)?"
-status: open
+status: closed
 deps: []
 links: [nid_rk795rjqzzksdjrhm03dy6s7l_e]
 created_iso: 2026-10-23T20:47:27Z
-status_updated_iso: 2026-10-23T20:47:27Z
+status_updated_iso: 2026-10-26T22:00:00Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
@@ -38,3 +39,6 @@ The human picks an option; if A or B, that work is done here and the plugin can 
 **2026-10-23T20:49:15Z**
 
 Reviewer finding: npm DOES run `prepare` when installing a git dependency, so a plugin depending on the tag would also run `scripts/install-browsers.mjs` (may download Chromium) and still get no dist/. README line about prepare running in "dev checkouts only" is wrong for git deps. Reviewer recommends option A with the browser install moved out of `prepare` into a separate dev step. Orchestrator still recommends C for now (plugin uses npm pack / file: path), with that README line fixed as part of whichever option is picked.
+
+**2026-10-26** Decided (human): moot. This repo becomes the Obsidian plugin; the plugin package depends on the library
+package through npm workspaces, so no git tag install is needed (see CLAUDE.md "Decided, not yet implemented").

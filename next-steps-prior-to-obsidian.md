@@ -54,7 +54,7 @@ Only this blocks the first launch. Everything else in Phase 0 is for the folder 
 | 6 | "Clockwise" side order (Phase 1) | the map reads in document order instead of zigzag |
 | 7 | Long labels: minimum size, then "…" (0.5) | headings are often long |
 | 8 | "Paste Markdown" in the demo (0.7) | tune the heading map without Obsidian |
-| 9 | Git tag the library (0.8) | the plugin repo can depend on it |
+| 9 | Git tag the library (0.8) | the plugin can depend on it (superseded: the plugin lives in this repo) |
 
 Not needed for the launch: collapse, drawing only what's on screen, less detail when zoomed out, the
 right-click hook, saved positions (dragged spots reset when the note reopens), several maps at once,
@@ -172,7 +172,7 @@ exists; that time is now. Proposal to keep the library simple:
 
 ## Phase 1a: plugin, mindmap file
 
-Plugin-side (other repo), listed here so the library API is shaped for it. A mindmap is a normal Markdown note, so
+Plugin-side (the `plugin` package in this repo, see CLAUDE.md), listed here so the library API is shaped for it. A mindmap is a normal Markdown note, so
 Obsidian keeps links updated on rename, and backlinks, graph and search see them:
 
 ````markdown
@@ -203,7 +203,7 @@ organic-mindmap: 1
 
 ## Phase 1: plugin, heading map of one note
 
-Plugin-side (other repo), listed here so the library API is shaped for it.
+Plugin-side (the `plugin` package in this repo, see CLAUDE.md), listed here so the library API is shaped for it.
 
 **Mapping.** Root = the file name (or the single H1, if the note has exactly one). Each heading's parent is
 the nearest heading above it with a lower level, so skipped levels (H1 -> H3) just attach to the H1. Text
