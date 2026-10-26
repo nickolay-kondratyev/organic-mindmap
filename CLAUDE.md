@@ -10,8 +10,8 @@ Delete each entry once it is implemented (the code and docs then carry it).
   public entry points. The library never imports `obsidian`. Obsidian releases need `manifest.json` at the repo root.
 - **Mindmap file = one Markdown note** flagged by frontmatter `organic-mindmap: 1`: nested list = tree, block id
   (`^n7f3k`) = node id, links as `[[...]]` so Obsidian updates them, positions in a `%%`-hidden JSON block keyed by
-  block id, each saved as an offset from its parent (not absolute). The format lives in the plugin; the library sees only `NodeId`s. Details: `next-steps-prior-to-obsidian.md`
-  "Phase 1a".
+  block id, each saved as an offset from its parent (not absolute). The format lives in the plugin; the library sees
+  only `NodeId`s. Details: `next-steps-prior-to-obsidian.md` "Phase 1a".
 
 ## Commands
 - `npm install` — deps + Playwright Chromium (the `prepare` script runs `scripts/install-browsers.mjs`, skipped when Chromium is present).
