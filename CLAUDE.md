@@ -20,7 +20,7 @@ Delete each entry once it is implemented (the code and docs then carry it).
 
 ## Conventions
 - Ports are env-driven so parallel checkouts do not collide: `PORT=5301 npm run dev`, `E2E_PORT=5311 npm run e2e`.
-- `src/core/**` never imports React (a unit test enforces it). Demo/tests import `natural-mindmap` and `natural-mindmap/react` only.
+- `src/core/**` never imports React (a unit test enforces it). Demo/tests import `organic-mindmap` and `organic-mindmap/react` only.
 - Settings persist through the host-implemented `SettingsStorage` seam (async `load`/`save`, e.g. Obsidian `loadData`/`saveData`); the library owns the settings and restores untrusted stored data over defaults. See docs/architecture.md "Settings storage".
 - Tests: Vitest BDD (`describe` GIVEN, `it` WHEN/THEN), one behavior per test. Playwright only for key journeys, no look assertions except the one reference screenshot (`e2e/reference-view.spec.ts`, see docs/architecture.md "Acceptance screenshot").
 - Tests never hit the network: E2E imports `test` from `e2e/fixtures.ts`; unit tests use `test-support/` (vendored font, synthetic curves).

@@ -49,6 +49,6 @@ describe('GIVEN a label font registered as a CSS font face', () => {
   });
 
   it('WHEN asking the family twice for the same font THEN the face is registered once', () => {
-    expect(faces.familyFor(font)).toBe('"natural-mindmap-font-1", cursive');
+    expect(faces.familyFor(font)).toBe('"organic-mindmap-font-1", cursive');
   });
 });

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { InMemoryHost, REFERENCE_DATA, type EditHandler, type EditStatus, type HostSimulation, type MindmapData } from 'natural-mindmap';
+import { InMemoryHost, REFERENCE_DATA, type EditHandler, type EditStatus, type HostSimulation, type MindmapData } from 'organic-mindmap';
 
 export const DEMO_REJECTION_REASON = 'The demo host is set to reject every change.';
 

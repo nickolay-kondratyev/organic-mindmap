@@ -1,4 +1,4 @@
-import { REFERENCE_DATA, type NodeClickEvent } from 'natural-mindmap';
+import { REFERENCE_DATA, type NodeClickEvent } from 'organic-mindmap';
 import { describeNodeClick } from './nodeClickReadout';
 
 const PLAIN_CLICK: NodeClickEvent = { nodeId: 'hamlet', ctrlKey: false, metaKey: false, shiftKey: false, altKey: false };

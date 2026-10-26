@@ -10,7 +10,7 @@ import { buildTree, type MindmapTree } from '../model/tree';
 import type { NodeRepositionEvent } from './repositionEvent';
 
 /** Id of the local, not-yet-sent child shown while its label is typed (the host picks the real id). */
-export const DRAFT_NODE_ID: NodeId = 'natural-mindmap:draft-node';
+export const DRAFT_NODE_ID: NodeId = 'organic-mindmap:draft-node';
 
 /** The part of a painted scene a drop is measured against. */
 export interface DropScene {

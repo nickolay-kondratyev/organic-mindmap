@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
-import { HANDLE_GAP, HANDLE_RADIUS, LABEL_EDITOR_ACCESSIBLE_NAME, type NodeId, type Point } from 'natural-mindmap';
-import type { MindmapApi } from 'natural-mindmap/react';
+import { HANDLE_GAP, HANDLE_RADIUS, LABEL_EDITOR_ACCESSIBLE_NAME, type NodeId, type Point } from 'organic-mindmap';
+import type { MindmapApi } from 'organic-mindmap/react';
 import { dragFromTo, nodeBox, nodesAt, viewZoom } from './demoPage';
 import { expect, test } from './fixtures';
 

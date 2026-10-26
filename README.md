@@ -1,4 +1,4 @@
-# natural-mindmap
+# organic-mindmap
 
 Mindmap library for the web that feels hand-drawn: framework-free TypeScript core plus a thin React wrapper.
 Requirements live in [spec.md](spec.md); architecture in [docs/architecture.md](docs/architecture.md).
@@ -6,8 +6,8 @@ Requirements live in [spec.md](spec.md); architecture in [docs/architecture.md](
 ## Use
 
 ```tsx
-import { REFERENCE_DATA } from 'natural-mindmap';
-import { Mindmap } from 'natural-mindmap/react';
+import { REFERENCE_DATA } from 'organic-mindmap';
+import { Mindmap } from 'organic-mindmap/react';
 
 <Mindmap data={REFERENCE_DATA} config={{ theme: { color: { background: '#101418' } } }} />;
 ```

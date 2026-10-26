@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG } from 'natural-mindmap';
+import { DEFAULT_CONFIG } from 'organic-mindmap';
 import { MissingConfigPathError, valueAt, withValueAt } from './configPath';
 
 describe('GIVEN the default config', () => {

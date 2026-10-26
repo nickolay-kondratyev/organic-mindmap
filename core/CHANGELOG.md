@@ -4,6 +4,14 @@ Versions are git tags (`vX.Y.Z`); the package is not published to npm yet. `dist
 dependency on a tag does not get a built library on its own; build from the tagged commit (`npm run build`).
 While 0.x, a minor version may change the API.
 
+## Unreleased
+
+### Changed
+- Renamed from `natural-mindmap` to `organic-mindmap`: import `organic-mindmap` and `organic-mindmap/react`. The
+  library now lives in `core/` of an npm workspaces repo (build there or from the root with `npm run build`). Internal
+  ids follow the name: DOM ids (`organic-mindmap-reparent-question-*`), CSS font families
+  (`organic-mindmap-font-*`), the pending/draft node ids and the console warning prefix. No behavior change.
+
 ## 0.2.0
 
 What the Obsidian heading map of one note needs (spec I7-I10, D7/D8; details in `docs/architecture.md`).

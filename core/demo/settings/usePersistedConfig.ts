@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { MindmapConfig, SettingsPersistence } from 'natural-mindmap';
+import type { MindmapConfig, SettingsPersistence } from 'organic-mindmap';
 
 export type ConfigUpdate = (update: (config: MindmapConfig) => MindmapConfig) => void;
 

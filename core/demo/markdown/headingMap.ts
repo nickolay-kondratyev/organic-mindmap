@@ -1,4 +1,4 @@
-import type { MindmapData, MindmapNode, NodeId } from 'natural-mindmap';
+import type { MindmapData, MindmapNode, NodeId } from 'organic-mindmap';
 
 /**
  * Demo-only glue (spec D7): turns pasted Markdown into a heading map the way the Obsidian plugin will. The plugin

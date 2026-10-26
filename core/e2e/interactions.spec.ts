@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { HANDLE_GAP, HANDLE_RADIUS, LABEL_EDITOR_ACCESSIBLE_NAME, REPARENT_DIALOG_LABELS, type NodeId, type Point } from 'natural-mindmap';
+import { HANDLE_GAP, HANDLE_RADIUS, LABEL_EDITOR_ACCESSIBLE_NAME, REPARENT_DIALOG_LABELS, type NodeId, type Point } from 'organic-mindmap';
 import { DEMO_REJECTION_REASON } from '../demo/host/demoHost';
 import { dragFromTo, emptyCanvasPoint, hostData, nodeBox, nodesAt, renameByDoubleClick, textOf, viewOf, viewZoom } from './demoPage';
 import { expect, test } from './fixtures';

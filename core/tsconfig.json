@@ -17,8 +17,8 @@
     "allowImportingTsExtensions": true,
     "types": ["node", "vitest/globals"],
     "paths": {
-      "natural-mindmap": ["./src/index.ts"],
-      "natural-mindmap/react": ["./src/react/index.ts"]
+      "organic-mindmap": ["./src/index.ts"],
+      "organic-mindmap/react": ["./src/react/index.ts"]
     }
   },
   "include": ["src", "demo", "e2e", "test-support", "bench", "*.config.ts"]

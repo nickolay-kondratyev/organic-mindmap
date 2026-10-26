@@ -1,6 +1,6 @@
-import type { MindmapConfig, SettingsStorage } from 'natural-mindmap';
+import type { MindmapConfig, SettingsStorage } from 'organic-mindmap';
 
-export const SETTINGS_STORAGE_KEY = 'natural-mindmap-demo:settings';
+export const SETTINGS_STORAGE_KEY = 'organic-mindmap-demo:settings';
 
 /** The demo's host side of the settings storage seam: one JSON entry in the browser's `localStorage`. */
 export class LocalStorageSettings implements SettingsStorage {

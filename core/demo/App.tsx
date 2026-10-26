@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { SettingsPersistence, type LabelFontStatus, type NodeClickEvent } from 'natural-mindmap';
-import { Mindmap, type MindmapApi } from 'natural-mindmap/react';
+import { SettingsPersistence, type LabelFontStatus, type NodeClickEvent } from 'organic-mindmap';
+import { Mindmap, type MindmapApi } from 'organic-mindmap/react';
 import { FontStatusBadge } from './FontStatusBadge';
 import { HostSimulationControls } from './host/HostSimulationControls';
 import { useDemoHost } from './host/demoHost';
@@ -53,7 +53,7 @@ export function App() {
       </main>
       <aside className="runner__panel" aria-label="Demo controls">
         <header className="runner__header">
-          <h1>Natural Mindmap</h1>
+          <h1>Organic Mindmap</h1>
           <p>Demo runner</p>
         </header>
         <MapControls

@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, type MindmapConfig } from 'natural-mindmap';
+import { DEFAULT_CONFIG, type MindmapConfig } from 'organic-mindmap';
 import { PanelSection } from '../PanelSection';
 import { valueAt, withValueAt } from './configPath';
 import { SettingControl } from './SettingControl';

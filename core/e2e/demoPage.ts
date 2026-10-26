@@ -7,8 +7,8 @@ import {
   type NodeBox,
   type NodeId,
   type Point,
-} from 'natural-mindmap';
-import type { MindmapApi } from 'natural-mindmap/react';
+} from 'organic-mindmap';
+import type { MindmapApi } from 'organic-mindmap/react';
 
 /** Canvas content has no DOM, so tests read the map through the demo's `window.mindmap` (demo/testHooks.ts). */
 type DemoWindow = Window & { mindmap?: MindmapApi | null };

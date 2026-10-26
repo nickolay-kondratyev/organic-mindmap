@@ -26,7 +26,7 @@ export interface EditPreview {
 }
 
 /** Id of the not-yet-confirmed node in an `add` preview; the host picks the real id. */
-export const PENDING_NODE_ID: NodeId = 'natural-mindmap:pending-node';
+export const PENDING_NODE_ID: NodeId = 'organic-mindmap:pending-node';
 export const EDIT_BLOCKED_REASON = 'Please wait: the previous change is still being saved.';
 /** Used when the host rejects without a usable message (e.g. `reject()` or a non-Error value). */
 export const DEFAULT_REJECTION_REASON = 'The change could not be saved.';

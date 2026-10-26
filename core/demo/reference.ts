@@ -1,4 +1,4 @@
-import { mountMindmap, REFERENCE_DATA } from 'natural-mindmap';
+import { mountMindmap, REFERENCE_DATA } from 'organic-mindmap';
 
 /**
  * Canvas-only acceptance page (spec Q3, §8): the reference data with zero config and nothing else on screen,

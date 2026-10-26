@@ -32,7 +32,7 @@ export class SettingsPersistence {
     try {
       return restoreConfig(await this.storage.load());
     } catch (error) {
-      console.warn('natural-mindmap: stored settings could not be loaded; using defaults', { error });
+      console.warn('organic-mindmap: stored settings could not be loaded; using defaults', { error });
       return restoreConfig(undefined);
     }
   }
@@ -54,7 +54,7 @@ export class SettingsPersistence {
       try {
         await this.storage.save(settings);
       } catch (error) {
-        console.warn('natural-mindmap: settings could not be saved', { error });
+        console.warn('organic-mindmap: settings could not be saved', { error });
       }
     }
     this.writing = false;

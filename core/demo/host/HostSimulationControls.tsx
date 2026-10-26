@@ -1,4 +1,4 @@
-import type { EditStatus } from 'natural-mindmap';
+import type { EditStatus } from 'organic-mindmap';
 import { PanelSection } from '../PanelSection';
 import { describeDelay, type HostSimulationSettings } from './demoHost';
 

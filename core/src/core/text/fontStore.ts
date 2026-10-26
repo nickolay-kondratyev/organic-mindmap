@@ -49,7 +49,7 @@ export class FontStore {
       this.entries.set(url, { status: 'loaded', font });
     } catch (error) {
       // Status `error` tells the host *that* it failed; the warning tells a developer *why*.
-      console.warn('natural-mindmap: font failed to load; its text is not drawn', { url, error });
+      console.warn('organic-mindmap: font failed to load; its text is not drawn', { url, error });
       this.entries.set(url, { status: 'error', error });
     }
     this.onSettled();

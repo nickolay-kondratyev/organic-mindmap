@@ -1,4 +1,4 @@
-import type { MindmapData } from 'natural-mindmap';
+import type { MindmapData } from 'organic-mindmap';
 import { HEADING_MAP_ROOT_ID, PASTED_NOTE_TITLE, headingMapData, parseHeadings } from './headingMap';
 
 /** `text -> parent's text` per non-root node, so expectations read like the outline they describe. */

@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG } from 'natural-mindmap';
+import { DEFAULT_CONFIG } from 'organic-mindmap';
 import { LocalStorageSettings, SETTINGS_STORAGE_KEY } from './localStorageSettings';
 
 /** The two `Storage` methods the demo uses, backed by a map (unit tests run without a DOM). */

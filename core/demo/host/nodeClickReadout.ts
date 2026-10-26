@@ -1,4 +1,4 @@
-import type { MindmapData, ModifierKeys, NodeClickEvent } from 'natural-mindmap';
+import type { MindmapData, ModifierKeys, NodeClickEvent } from 'organic-mindmap';
 
 /** Held modifier keys in the order keyboards usually name them. */
 const MODIFIER_NAMES: readonly (readonly [keyof ModifierKeys, string])[] = [

@@ -1,4 +1,4 @@
-import { LAYOUT_TYPES, SIDE_ORDERS, type MindmapConfig } from 'natural-mindmap';
+import { LAYOUT_TYPES, SIDE_ORDERS, type MindmapConfig } from 'organic-mindmap';
 import type { LeafPathOf } from './configPath';
 
 /** Slider bounds for one numeric setting; `hint` is shown under the control when the label alone is not enough. */

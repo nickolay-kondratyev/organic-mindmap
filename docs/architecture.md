@@ -2,9 +2,9 @@
 
 One npm package, two entry points:
 
-- `natural-mindmap` (`src/index.ts` -> `src/core/`): framework-free TypeScript. **Never imports React**
+- `organic-mindmap` (`src/index.ts` -> `src/core/`): framework-free TypeScript. **Never imports React**
   (guarded by `src/core/noReactImports.test.ts`).
-- `natural-mindmap/react` (`src/react/`): `<Mindmap>` component that mounts the core onto a canvas and
+- `organic-mindmap/react` (`src/react/`): `<Mindmap>` component that mounts the core onto a canvas and
   syncs size / device pixel ratio with a `ResizeObserver`. It mounts in a layout effect before attaching its ref, so a
   non-null ref (`MindmapApi`) is always usable (`e2e/mindmapRef.spec.ts`).
 

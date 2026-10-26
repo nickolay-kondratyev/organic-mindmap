@@ -1,4 +1,4 @@
-import type { MindmapApi } from 'natural-mindmap/react';
+import type { MindmapApi } from 'organic-mindmap/react';
 import { expect, test } from './fixtures';
 
 /** What the probe saw each time the demo assigned `window.mindmap` a non-null API. */

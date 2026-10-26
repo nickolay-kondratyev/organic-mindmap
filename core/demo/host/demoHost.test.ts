@@ -1,4 +1,4 @@
-import { REFERENCE_DATA, type EditRequest, type MindmapData } from 'natural-mindmap';
+import { REFERENCE_DATA, type EditRequest, type MindmapData } from 'organic-mindmap';
 import { DEMO_REJECTION_REASON, ResettableEditHandler, describeDelay, toHostSimulation } from './demoHost';
 
 describe('GIVEN the host simulation settings', () => {

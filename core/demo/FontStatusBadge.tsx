@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { LabelFontStatus } from 'natural-mindmap';
+import type { LabelFontStatus } from 'organic-mindmap';
 
 type OverallStatus = 'loading' | 'loaded' | 'error';
 

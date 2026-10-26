@@ -2,7 +2,7 @@ import type { LoadedFont } from './loadedFont';
 
 /** Used while the label font is still loading (or failed), so typing is never blocked on it. */
 const FALLBACK_FAMILY = 'cursive';
-const FAMILY_PREFIX = 'natural-mindmap-font-';
+const FAMILY_PREFIX = 'organic-mindmap-font-';
 
 /**
  * Registers parsed label fonts with the document (`FontFace` from the very same bytes), so DOM text such as the
@@ -51,7 +51,7 @@ export class CssFontFaces {
       .then(() => {
         if (!this.disposed) this.onFontReady();
       })
-      .catch((error: unknown) => console.warn('natural-mindmap: label font unusable for DOM text', { error }));
+      .catch((error: unknown) => console.warn('organic-mindmap: label font unusable for DOM text', { error }));
     this.families.set(font, family);
     return family;
   }

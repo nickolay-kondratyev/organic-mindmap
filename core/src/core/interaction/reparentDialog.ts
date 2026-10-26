@@ -82,7 +82,7 @@ export class ReparentDialog {
     const element = createCanvasOverlayElement(this.canvas, 'div');
     const doc = element.ownerDocument;
     dialogCount += 1;
-    const textId = `natural-mindmap-reparent-question-${dialogCount}`;
+    const textId = `organic-mindmap-reparent-question-${dialogCount}`;
     element.setAttribute('role', 'dialog');
     element.setAttribute('aria-labelledby', textId);
     Object.assign(element.style, {

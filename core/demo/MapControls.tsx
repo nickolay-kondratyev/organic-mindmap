@@ -1,4 +1,4 @@
-import type { MindmapApi } from 'natural-mindmap/react';
+import type { MindmapApi } from 'organic-mindmap/react';
 import { PanelSection } from './PanelSection';
 
 /** Size of the "big map" button's map: what `npm run bench` calls a long note, to feel how it pans, zooms and edits. */

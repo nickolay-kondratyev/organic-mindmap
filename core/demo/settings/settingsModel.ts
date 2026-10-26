@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, type MindmapConfig } from 'natural-mindmap';
+import { DEFAULT_CONFIG, type MindmapConfig } from 'organic-mindmap';
 import { dottedPath, valueAt, type ConfigPath } from './configPath';
 import { FIELD_LABELS, GROUP_TITLES, NUMBER_RANGES, SECTION_TITLES, STRING_CHOICES, type NumberRange, type NumberSettingPath } from './settingSpecs';
 

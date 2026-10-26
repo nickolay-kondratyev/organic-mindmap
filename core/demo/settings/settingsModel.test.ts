@@ -1,4 +1,4 @@
-import { DEFAULT_CONFIG, type MindmapConfig } from 'natural-mindmap';
+import { DEFAULT_CONFIG, type MindmapConfig } from 'organic-mindmap';
 import { valueAt, withValueAt } from './configPath';
 import { formatNumber, humanize, isAtDefaults, settingSections, type SettingField } from './settingsModel';
 
