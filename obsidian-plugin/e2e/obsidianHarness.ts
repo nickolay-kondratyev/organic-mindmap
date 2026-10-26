@@ -219,6 +219,18 @@ export class ObsidianHarness {
       fs.mkdirSync(path.dirname(target), { recursive: true });
       fs.writeFileSync(target, content);
     }
+    ObsidianHarness.pinVaultSettings();
+  }
+
+  /**
+   * Obsidian settings the journeys rely on, stated explicitly so a changed default (or a tweaked dev vault) cannot
+   * break them silently: "Automatically update internal links" (`alwaysUpdateLinks`, default on) is what rewrites a
+   * mindmap note's `[[link]]` when the linked note is renamed.
+   */
+  private static pinVaultSettings(): void {
+    const appJsonPath = path.join(VAULT_COPY_DIR, '.obsidian', 'app.json');
+    const current = fs.existsSync(appJsonPath) ? JSON.parse(fs.readFileSync(appJsonPath, 'utf8')) : {};
+    fs.writeFileSync(appJsonPath, JSON.stringify({ ...current, alwaysUpdateLinks: true }));
   }
 
   private static prepareSandboxConfigDir(): void {
