@@ -3,13 +3,14 @@ Goal right now is to implement [spec.md](spec.md). Architecture and module seams
 
 ## Decided, not yet implemented (2026-10-26)
 Delete each entry once it is implemented (the code and docs then carry it).
-- **This repo becomes the Obsidian plugin.** No separate plugin repo.
+- **This repo becomes the Obsidian plugin.** No separate plugin repo. Name: `organic-mindmap` everywhere (new repo,
+  plugin id, file flag); the library package name follows it when it moves. Epic/tickets wait for the new repo.
 - **Library and plugin stay separate packages** (npm workspaces): the library (today's `src/`, demo, its tests) moves to
   its own package and keeps its own tests; a new `plugin` package depends on it like any dependency and imports only its
   public entry points. The library never imports `obsidian`. Obsidian releases need `manifest.json` at the repo root.
 - **Mindmap file = one Markdown note** flagged by frontmatter `organic-mindmap: 1`: nested list = tree, block id
   (`^n7f3k`) = node id, links as `[[...]]` so Obsidian updates them, positions in a `%%`-hidden JSON block keyed by
-  block id. The format lives in the plugin; the library sees only `NodeId`s. Details: `next-steps-prior-to-obsidian.md`
+  block id, each saved as an offset from its parent (not absolute). The format lives in the plugin; the library sees only `NodeId`s. Details: `next-steps-prior-to-obsidian.md`
   "Phase 1a".
 
 ## Commands

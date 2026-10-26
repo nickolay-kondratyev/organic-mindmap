@@ -19,6 +19,8 @@ Hosts like Obsidian need dragged node positions to survive a reload. Today the l
 The Obsidian mindmap file needs it (`next-steps-prior-to-obsidian.md`, "Library work for the mindmap file").
 That host has one stable id per node (the list item's block id), so the identity question below does not block
 this ticket: keep the library API keyed by plain `NodeId`; any layered identity stays in the plugin.
+Positions are saved and restored as an **offset from the parent**, not absolute map coordinates (decision 4 in
+`next-steps-prior-to-obsidian.md`): adding a node shifts the auto layout, and absolute positions would land wrong.
 
 ## Decision (2026-10-23, human): wait (superseded above)
 Deferred until a real host (e.g. the Obsidian plugin) needs it.

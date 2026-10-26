@@ -272,7 +272,7 @@ Until each one ships, the plugin turns it off with the per-node rules (0.2), so 
 1. ~~Read-only heading map first?~~ **Decided:** the first launch is the heading map with move.
 2. **Click behavior.** Recommend: click = open/jump, double-click = rename, right-click = Obsidian menu.
 3. ~~Mobile / touch in the first release?~~ **Decided:** desktop first. Pinch-zoom comes later.
-4. **Saved positions relative to the parent (not absolute)?** Recommend yes.
+4. ~~Saved positions relative to the parent (not absolute)?~~ **Decided (2026-10-26):** yes, offset from the parent.
 5. **Light theme preset in phase 0?** Recommend yes (many Obsidian users run light mode).
 6. **How the plugin gets the library.** Recommend a git dependency on tags for now, npm later.
 7. **Settings screen** (`nid_kkm4447dku0vlz0ry1zwr2v8k_e`): recommend (b).
