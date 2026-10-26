@@ -18,8 +18,8 @@ export const STALE_POSITIONS_REASON =
   'The note changed since the map was drawn, so the new position was not saved. The map now shows the new text; please drag again.';
 
 /**
- * A write (or undo) that started before `MindmapNoteSession.close` and so belongs to a note the view no longer shows:
- * its outcome was not loaded. Callers have nothing to show for it.
+ * A write (or undo) queued before `MindmapNoteSession.close` finished after it. It still ran against its own note's
+ * file (stale-checked), but the view no longer shows that note, so callers have nothing to show for it.
  */
 export class NoteClosedError extends Error {
   constructor() {
@@ -43,50 +43,76 @@ export interface WrittenEdit {
 /** `changedSince`: the file no longer holds the text the write left, so undo would drop the newer change. */
 export type UndoResult = 'restored' | 'changedSince';
 
-/**
- * One open map's note: the text it was drawn from and every write back to the file. Each map view owns one, so
- * two open maps share nothing. Writes go through `NoteTextFile.process` and apply only when the file still holds
- * the text the map was drawn from (generated block ids only resolve within that read; a stale write could also
- * drop what someone typed meanwhile); otherwise the session reloads from the file's text and refuses the write.
- * Writes run one after another, so each one checks against the text the previous one left (a drop can land while
- * an edit is still being written). `close` ends the note: writes started before it never change the session again.
- */
-export class MindmapNoteSession {
-  private current: SessionState = { kind: 'empty' };
+/** One opened note's read: the text the map was drawn from and what it reads as. */
+class OpenNote {
+  state: SessionState = { kind: 'empty' };
   private text: string | null = null;
-  /** The tail of the write queue; never rejects. */
-  private writes: Promise<unknown> = Promise.resolve();
-  /** Counts `close` calls: a write started under an older count belongs to a note the session no longer holds. */
-  private closes = 0;
 
-  get state(): SessionState {
-    return this.current;
-  }
-
-  /** The note when readable, else `null`. */
   get note(): MindmapNote | null {
-    return this.current.kind === 'read' ? this.current.note : null;
-  }
-
-  /**
-   * The view stopped showing this note (switched to another file, or closed). Writes still queued or in flight then
-   * reject with {@link NoteClosedError} instead of loading their outcome, which would show the old note's text for
-   * the next one. A queued write that had not started yet is dropped: it would check against a note the session
-   * no longer holds.
-   */
-  close(): void {
-    this.closes++;
-    this.current = { kind: 'empty' };
-    this.text = null;
+    return this.state.kind === 'read' ? this.state.note : null;
   }
 
   /** Re-reads only when the text differs, so the same text keeps the same note (and its generated ids). */
   load(text: string): SessionState {
     if (text !== this.text) {
       this.text = text;
-      this.current = readMindmapNote(text);
+      this.state = readMindmapNote(text);
     }
-    return this.current;
+    return this.state;
+  }
+
+  readNoteAfterWrite(): MindmapNote {
+    const state = this.state;
+    if (state.kind !== 'read') {
+      // The format writes only what it can read back; reaching this means a format bug.
+      throw new Error(`The note cannot be read back after the write: ${state.kind === 'problem' ? state.problem : state.kind}`);
+    }
+    return state.note;
+  }
+}
+
+/** A confirmed write: the note as written, and how to undo it. */
+interface WrittenNote {
+  readonly note: MindmapNote;
+  readonly snapshot: WriteSnapshot;
+}
+
+/**
+ * One open map's note: the text it was drawn from and every write back to the file. Each map view owns one, so
+ * two open maps share nothing. Writes go through `NoteTextFile.process` and apply only when the file still holds
+ * the text the map was drawn from (generated block ids only resolve within that read; a stale write could also
+ * drop what someone typed meanwhile); otherwise the session reloads from the file's text and refuses the write.
+ * Writes run one after another, so each one checks against the text the previous one left (a drop can land while
+ * an edit is still being written). `close` ends the note: writes queued before it still finish against that note,
+ * but never change the session again.
+ */
+export class MindmapNoteSession {
+  private open = new OpenNote();
+  /** The tail of the write queue; never rejects. */
+  private writes: Promise<unknown> = Promise.resolve();
+
+  get state(): SessionState {
+    return this.open.state;
+  }
+
+  /** The note when readable, else `null`. */
+  get note(): MindmapNote | null {
+    return this.open.note;
+  }
+
+  /**
+   * The view stopped showing this note (switched to another file, or closed). Writes already queued still run
+   * against the old note's file, each stale-checked against the text the previous one left there: dropping them
+   * would silently lose a drag or edit made right before the switch. Their outcome is not loaded (it would show the
+   * old note's text for the next one): they reject with {@link NoteClosedError}.
+   */
+  close(): void {
+    this.open = new OpenNote();
+  }
+
+  /** Re-reads only when the text differs, so the same text keeps the same note (and its generated ids). */
+  load(text: string): SessionState {
+    return this.open.load(text);
   }
 
   /**
@@ -95,8 +121,8 @@ export class MindmapNoteSession {
    * stale refusal the session already holds the file's newer text; callers show `state` again.
    */
   async applyEdit(request: EditRequest, file: NoteTextFile): Promise<WrittenEdit> {
-    const snapshot = await this.write((note) => note.applyEdit(request), file, STALE_EDIT_REASON);
-    return { data: this.readNoteAfterWrite().toMindmapData(), snapshot };
+    const { note, snapshot } = await this.write((current) => current.applyEdit(request), file, STALE_EDIT_REASON);
+    return { data: note.toMindmapData(), snapshot };
   }
 
   /**
@@ -105,25 +131,21 @@ export class MindmapNoteSession {
    */
   async savePositions(offsets: NodeOffsets, file: NoteTextFile): Promise<void> {
     await this.write((note) => ({ kind: 'written', text: note.setPositions(offsets) }), file, STALE_POSITIONS_REASON);
-    this.readNoteAfterWrite();
   }
 
   /** Puts back the text from before `snapshot`'s write, only while the file still holds the text it left. */
   undo(snapshot: WriteSnapshot, file: NoteTextFile): Promise<UndoResult> {
-    return this.enqueue(async (stillOpen) => {
-      stillOpen();
+    return this.enqueue(async (open) => {
       const text = await file.process((fileText) => (fileText === snapshot.after ? snapshot.before : fileText));
-      stillOpen();
-      this.load(text);
+      open.load(text);
       return text === snapshot.before ? 'restored' : 'changedSince';
     });
   }
 
-  /** One stale-checked `process`; resolves with the before/after texts, else rejects with the reason. */
-  private write(change: (note: MindmapNote) => NoteWriteResult, file: NoteTextFile, staleReason: string): Promise<WriteSnapshot> {
-    return this.enqueue(async (stillOpen) => {
-      stillOpen();
-      const note = this.note;
+  /** One stale-checked `process`; resolves with the note as written, else rejects with the reason. */
+  private write(change: (note: MindmapNote) => NoteWriteResult, file: NoteTextFile, staleReason: string): Promise<WrittenNote> {
+    return this.enqueue(async (open) => {
+      const note = open.note;
       if (note === null) throw new Error('The map has no readable note to change');
       // A property, not a `let`: TypeScript does not see assignments made inside the callback.
       const seen: { outcome: WriteOutcome | null } = { outcome: null };
@@ -138,37 +160,38 @@ export class MindmapNoteSession {
       });
       // `process` always calls `change` before resolving; `null` here is a broken file store, not a user error.
       if (seen.outcome === null) throw new Error('The file store resolved without reading the note');
-      stillOpen();
       switch (seen.outcome.kind) {
         case 'written':
-          this.load(seen.outcome.text);
-          return { before: note.text, after: seen.outcome.text };
+          open.load(seen.outcome.text);
+          return { note: open.readNoteAfterWrite(), snapshot: { before: note.text, after: seen.outcome.text } };
         case 'refused':
           throw new Error(seen.outcome.reason);
         case 'stale':
-          this.load(seen.outcome.text);
+          open.load(seen.outcome.text);
           throw new Error(staleReason);
       }
     });
   }
 
-  /** Queues `task`; its `stillOpen` throws {@link NoteClosedError} once the session closed after the enqueue. */
-  private enqueue<T>(task: (stillOpen: () => void) => Promise<T>): Promise<T> {
-    const closesAtEnqueue = this.closes;
-    const stillOpen = (): void => {
-      if (this.closes !== closesAtEnqueue) throw new NoteClosedError();
-    };
-    const run = this.writes.then(() => task(stillOpen));
+  /**
+   * Queues `task` against the note open now (its `OpenNote` keeps tracking that note's text even after `close`).
+   * If the session closed meanwhile, the caller gets {@link NoteClosedError} instead of the task's outcome.
+   */
+  private enqueue<T>(task: (open: OpenNote) => Promise<T>): Promise<T> {
+    const open = this.open;
+    const closedSince = (): boolean => open !== this.open;
+    const run = this.writes
+      .then(() => task(open))
+      .then(
+        (value) => {
+          if (closedSince()) throw new NoteClosedError();
+          return value;
+        },
+        (error: unknown) => {
+          throw closedSince() ? new NoteClosedError() : error;
+        },
+      );
     this.writes = run.catch(() => undefined);
     return run;
-  }
-
-  private readNoteAfterWrite(): MindmapNote {
-    const state = this.current;
-    if (state.kind !== 'read') {
-      // The format writes only what it can read back; reaching this means a format bug.
-      throw new Error(`The note cannot be read back after the write: ${state.kind === 'problem' ? state.problem : state.kind}`);
-    }
-    return state.note;
   }
 }

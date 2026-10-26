@@ -248,10 +248,49 @@ describe('MindmapNoteSession', () => {
       await expect(switched.queuedSave).rejects.toBeInstanceOf(NoteClosedError);
     });
 
-    it('WHEN the writes finish THEN the queued position save did not write the file', async () => {
+    it('WHEN the writes finish THEN the queued position save still wrote the old note\'s file', async () => {
       const switched = await switchedMidEdit();
       await finishWrites(switched);
-      expect(readNote(switched.file.text).positions).toEqual({});
+      expect(readNote(switched.file.text).positions).toEqual({ c1: { dx: 1, dy: 2 } });
+    });
+
+    it('WHEN the writes finish THEN the old note\'s file keeps the edit too', async () => {
+      const switched = await switchedMidEdit();
+      await finishWrites(switched);
+      expect(readNote(switched.file.text).nodes.map((node) => node.rawText)).toContain('New idea');
+    });
+  });
+
+  describe('GIVEN an undo still being written when the view closes the note and loads another one', () => {
+    const OTHER_NOTE = noteText('---', 'organic-mindmap: 1', '---', '- Other map ^other');
+    const DELETED = noteText('---', 'organic-mindmap: 1', '---', '- Root ^root');
+
+    async function switchedMidUndo(): Promise<{ session: MindmapNoteSession; file: InFlightNoteFile; undo: Promise<unknown> }> {
+      const session = new MindmapNoteSession();
+      session.load(DELETED);
+      const file = new InFlightNoteFile(DELETED);
+      const undo = session.undo({ before: NOTE, after: DELETED }, file);
+      await file.started;
+      session.close();
+      session.load(OTHER_NOTE);
+      file.finish();
+      await Promise.allSettled([undo]);
+      return { session, file, undo };
+    }
+
+    it('WHEN it finishes THEN the old note\'s file is restored', async () => {
+      const { file } = await switchedMidUndo();
+      expect(file.text).toBe(NOTE);
+    });
+
+    it('WHEN it finishes THEN the session keeps showing the other note', async () => {
+      const { session } = await switchedMidUndo();
+      expect(session.note?.text).toBe(OTHER_NOTE);
+    });
+
+    it('WHEN it finishes THEN the undo rejects as closed', async () => {
+      const { undo } = await switchedMidUndo();
+      await expect(undo).rejects.toBeInstanceOf(NoteClosedError);
     });
   });
 

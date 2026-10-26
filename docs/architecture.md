@@ -265,8 +265,8 @@ page and loads none of the runner code or CSS.
   else reloads and refuses with `STALE_EDIT_REASON` (generated ids resolve only within one read; a stale write could
   drop what was typed meanwhile). Session writes run one after another, so a drop saved while an edit is still
   writing checks against that edit's text. When the view switches to another file (or closes) it closes the session:
-  writes still queued or in flight for the old note then reject with `NoteClosedError` instead of loading the old
-  text into the next note's map. Saved positions: the map mounts with the note's offsets
+  writes already queued for the old note still finish against its file (stale-checked; dropping them would lose a
+  drag made right before the switch), but reject with `NoteClosedError` instead of loading into the next note's map. Saved positions: the map mounts with the note's offsets
   (`nodeOffsets`), every `onNodeOffsetsChange` goes through the same stale-checked write (`savePositions`), and a
   change from outside the map also resets the map's offsets to the note's. Delete: `onNodeContextMenu` opens an
   Obsidian `Menu` whose "Delete" calls `requestEdit` (the library refuses the root up front; the view shows the
