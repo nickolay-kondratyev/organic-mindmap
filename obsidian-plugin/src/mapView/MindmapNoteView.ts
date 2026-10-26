@@ -21,6 +21,7 @@ const DELETE_LABEL = 'Delete';
 const DELETED_MESSAGE = 'Deleted from the mindmap.';
 const UNDO_LABEL = 'Undo';
 const UNDO_CHANGED_SINCE_MESSAGE = 'Not undone: the note changed after the delete. Use the Markdown view or file recovery to get it back.';
+const UNDO_FAILED_PREFIX = 'Could not undo the delete:';
 /** Long enough to notice the delete and reach "Undo". */
 const UNDO_NOTICE_MS = 10_000;
 
@@ -47,6 +48,8 @@ export class MindmapNoteView extends FileView {
   private shownNote: MindmapNote | null = null;
   /** The open "Undo" notice of the last delete; it only makes sense while this view shows that note. */
   private undoNotice: Notice | null = null;
+  /** Counts `reloadFromFile` calls so a slower, older read never overwrites a newer one. */
+  private latestReload = 0;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -115,10 +118,12 @@ export class MindmapNoteView extends FileView {
   private async reloadFromFile(): Promise<void> {
     const file = this.file;
     if (file === null) return;
+    const reload = ++this.latestReload;
     // `read` (disk), not `cachedRead`: a reload must see what was just written, never a cached older text.
     const text = await this.app.vault.read(file);
-    // The file may have been closed while reading.
-    if (this.file !== file) return;
+    // The file may have been closed while reading. Back-to-back writes (a reparent, then its saved positions) start
+    // overlapping reads that may resolve out of order: only the newest may load, else an older text would win.
+    if (this.file !== file || reload !== this.latestReload) return;
     this.session.load(text);
     this.render();
   }
@@ -238,9 +243,14 @@ export class MindmapNoteView extends FileView {
   }
 
   private async undo(snapshot: WriteSnapshot): Promise<void> {
-    const result = await this.session.undo(snapshot, this.noteFile());
-    this.render();
-    if (result === 'changedSince') new Notice(UNDO_CHANGED_SINCE_MESSAGE);
+    try {
+      const result = await this.session.undo(snapshot, this.noteFile());
+      this.render();
+      if (result === 'changedSince') new Notice(UNDO_CHANGED_SINCE_MESSAGE);
+    } catch (error) {
+      // E.g. the file could not be written: without this the click would fail silently.
+      new Notice(`${UNDO_FAILED_PREFIX} ${errorMessage(error)}`);
+    }
   }
 
   /** Every write is one `vault.process` on the open note. */
