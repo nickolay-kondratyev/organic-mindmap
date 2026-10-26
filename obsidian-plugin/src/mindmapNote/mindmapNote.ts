@@ -1,12 +1,14 @@
-import { EDIT_PROBLEM, findEditProblem, type EditRequest, type MindmapData, type NodeId } from 'organic-mindmap';
-import { claimUniqueBlockId, type BlockIdSource } from './blockId';
 import {
-  findLayoutBlock,
-  formatLayoutJsonLines,
-  newLayoutBlockLines,
+  EDIT_PROBLEM,
+  findEditProblem,
+  type EditRequest,
+  type MindmapData,
+  type NodeId,
   type NodeOffset,
   type NodeOffsets,
-} from './layoutBlock';
+} from 'organic-mindmap';
+import { claimUniqueBlockId, type BlockIdSource } from './blockId';
+import { findLayoutBlock, formatLayoutJsonLines, newLayoutBlockLines } from './layoutBlock';
 import { appendBlockId, formatListItemLine, isBulletMarker, toSingleLine, type ListItemLine } from './listItemLine';
 import { displayLabel } from './linkLabel';
 import { indentWidth, isBlank, NoteLines, reindent } from './noteLines';

@@ -1,7 +1,7 @@
-import type { NodeId } from 'organic-mindmap';
+import type { NodeId, NodeOffset } from 'organic-mindmap';
 import { claimUniqueBlockId, randomBlockId, type BlockIdSource } from './blockId';
 import { findFrontmatter } from './frontmatter';
-import { findLayoutBlock, parseLayoutJson, type NodeOffset } from './layoutBlock';
+import { findLayoutBlock, parseLayoutJson } from './layoutBlock';
 import { parseListItemLine, type ListItemLine } from './listItemLine';
 import { MindmapNote, type NoteItem } from './mindmapNote';
 import { indentWidth, NoteLines } from './noteLines';
@@ -42,11 +42,16 @@ export function readMindmapNote(text: string, newBlockId: BlockIdSource = random
   if (duplicate !== null) return { kind: 'problem', problem: duplicate };
 
   const items = assignIds(found, newBlockId);
-  const layout = findLayoutBlock(lines, bodyStart);
-  const savedOffsets = layout === null ? new Map<NodeId, NodeOffset>() : parseLayoutJson(lines.slice(layout.openLine + 1, layout.closeLine).join('\n'));
+  const savedOffsets = readSavedOffsets(lines, bodyStart);
   const knownIds = new Set(items.map((item) => item.id));
   const positions = Object.fromEntries([...savedOffsets].filter(([id]) => knownIds.has(id)));
   return { kind: 'read', note: new MindmapNote({ text, bodyStart, items, positions, newBlockId }) };
+}
+
+function readSavedOffsets(lines: readonly string[], bodyStart: number): Map<NodeId, NodeOffset> {
+  const layout = findLayoutBlock(lines, bodyStart);
+  if (layout === null) return new Map();
+  return parseLayoutJson(lines.slice(layout.openLine + 1, layout.closeLine).join('\n'));
 }
 
 interface FoundItem {

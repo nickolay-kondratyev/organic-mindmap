@@ -1,5 +1,4 @@
-import { EDIT_PROBLEM, type EditRequest } from 'organic-mindmap';
-import type { NodeOffset } from './layoutBlock';
+import { EDIT_PROBLEM, type EditRequest, type NodeOffset } from 'organic-mindmap';
 import type { MindmapNote } from './mindmapNote';
 import { noteText, readNote } from './testSupport';
 

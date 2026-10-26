@@ -1,15 +1,4 @@
-import type { NodeId } from 'organic-mindmap';
-
-/**
- * Offset of a node from its parent, as saved in the note.
- * Mirrors the library's saved-positions types (`NodeOffset`, `NodeOffsets`), which are not merged yet; switch to
- * the library's once they land.
- */
-export interface NodeOffset {
-  readonly dx: number;
-  readonly dy: number;
-}
-export type NodeOffsets = Readonly<Record<NodeId, NodeOffset>>;
+import type { NodeId, NodeOffset } from 'organic-mindmap';
 
 /** Language of the fenced code block that holds the saved offsets. */
 export const LAYOUT_BLOCK_LANGUAGE = 'organic-mindmap-layout';
