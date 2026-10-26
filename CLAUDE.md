@@ -1,19 +1,14 @@
 Use typical best practices and idiomatic code.
 Goal right now is to implement [spec.md](spec.md). Architecture and module seams: [docs/architecture.md](docs/architecture.md).
 
-## Decided, not yet implemented (2026-10-26)
-Delete each entry once it is implemented (the code and docs then carry it).
-- **Mindmap file = one Markdown note** flagged by frontmatter `organic-mindmap: 1`: nested list = tree, block id
-  (`^n7f3k`) = node id, links as `[[...]]` so Obsidian updates them, positions in a `%%`-hidden JSON block keyed by
-  block id, each saved as an offset from its parent (not absolute). The format lives in the plugin; the library sees
-  only `NodeId`s. Details: `next-steps-prior-to-obsidian.md` "Phase 1a".
-
 ## Layout
 - npm workspaces monorepo. `core/` is the library package `organic-mindmap` (src, demo, tests, bench, configs,
   CHANGELOG). `obsidian-plugin/` is the Obsidian plugin (private package): depends on `organic-mindmap` and imports
   only its public entry (`organic-mindmap`, aliased to `core/src` by `obsidian-plugin/coreAlias.ts`); bundles to
   `obsidian-plugin/main.js`. `manifest.json` + `versions.json` stay at the repo root (Obsidian release flow). The
   root holds shared docs (`spec.md`, `docs/`, tickets) and a private workspace root.
+- A mindmap is one Markdown note flagged `organic-mindmap: 1` (format: `next-steps-prior-to-obsidian.md` "Phase 1a");
+  its reader/writer is `obsidian-plugin/src/mindmapNote/`, pure text without `obsidian`.
 - The library never imports `obsidian` (`core/src/noObsidianImports.test.ts`); the plugin never reaches core internals.
 
 ## Commands
