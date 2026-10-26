@@ -1,0 +1,19 @@
+/* Organic Mindmap plugin styles (shipped next to main.js). */
+
+.organic-mindmap-view {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.organic-mindmap-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.organic-mindmap-problem {
+  max-width: var(--file-line-width);
+  margin: var(--size-4-8) auto;
+  padding: var(--size-4-4);
+}
