@@ -206,7 +206,9 @@ branches per pointer move, over a frozen base scene.
   only while the hook is set; bare canvas, the "+" and preview/draft nodes keep the browser's menu. The library draws
   no menu: hosts show their own and send `delete` via `requestEdit`. Host highlight (`setHighlightedNode`): a ring
   in `theme.color.highlight` painted by the overlay, so it never rebuilds the scene; an unknown id draws nothing. DOM overlays (`<input>` editor, `role="alert"` notice with the rejection or
-  refusal reason, `role="dialog"` reparent question) are created lazily as siblings right after the canvas, positioned via `offsetLeft/Top`. A
+  refusal reason, `role="dialog"` reparent question) are created lazily as siblings right after the canvas, positioned via `offsetLeft/Top`. Their static looks
+  are classes in the library stylesheet (`organic-mindmap/styles.css`, which hosts include); only per-frame values
+  (position, size, font) are inline styles, because Obsidian's plugin review rejects static inline styles. A
   rejected edit sent from the editor reopens it with the typed label (I5.4).
   `MindmapHandle.getNodeScreenBox` / `getData` expose node boxes and confirmed data (host UI, E2E).
 

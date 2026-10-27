@@ -1,4 +1,7 @@
-/* Organic Mindmap plugin styles (shipped next to main.js). */
+/* Organic Mindmap plugin styles. The build bundles this into styles.css at the repo root (next to main.js). */
+
+/* The library's canvas overlays (label editor, notice, reparent dialog). */
+@import 'organic-mindmap/styles.css';
 
 /* `.view-content` too: Obsidian's own `.view-content` padding (12px 12px 32px) beats a single class. */
 .view-content.organic-mindmap-view {

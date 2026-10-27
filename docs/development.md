@@ -9,7 +9,7 @@ npm workspaces monorepo:
 | Package | Path | What |
 |---|---|---|
 | `organic-mindmap` | [`core/`](../core/README.md) | The mindmap library (framework-free core + React wrapper), its demo and tests. Usable on its own; knows nothing about Obsidian. |
-| plugin | `obsidian-plugin/` | The Obsidian plugin, built on the library's public API. Bundles to `main.js` at the repo root; the repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`, `versions.json`). |
+| plugin | `obsidian-plugin/` | The Obsidian plugin, built on the library's public API. Bundles to `main.js` and `styles.css` (its `styles.css` + the library's stylesheet) at the repo root; the repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`, `versions.json`). |
 
 ## Commands
 

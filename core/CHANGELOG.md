@@ -25,6 +25,10 @@ While 0.x, a minor version may change the API.
   changes made inside the map), so a host can read back what `setConfig` and `onConfigChange` left it with.
 
 ### Changed
+- Hosts must include the new stylesheet `organic-mindmap/styles.css` once (e.g. `import 'organic-mindmap/styles.css'`).
+  The DOM overlays over the canvas (inline label editor, notice banner, reparent dialog) take their static looks from
+  its classes (`organic-mindmap-*`) instead of inline styles, so hosts and themes can override them; without it they
+  are unpositioned and unstyled. Hidden overlays use the `hidden` attribute.
 - Renamed from `natural-mindmap` to `organic-mindmap`: import `organic-mindmap` and `organic-mindmap/react`. The
   library now lives in `core/` of an npm workspaces repo (build there or from the root with `npm run build`). Internal
   ids follow the name: DOM ids (`organic-mindmap-reparent-question-*`), CSS font families

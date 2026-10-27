@@ -2,6 +2,7 @@ import { createCanvasOverlayElement, placeOverCanvas } from './canvasOverlayElem
 
 const TOP_MARGIN_PX = 12;
 const DISMISS_LABEL = 'Dismiss';
+const NOTICE_CLASS = 'organic-mindmap-notice';
 
 /**
  * Plain-language message over the top of the canvas (spec I5.4): why an edit was rejected by the host or refused
@@ -19,17 +20,17 @@ export class NoticeBanner {
   show(message: string): void {
     const element = this.element ?? this.create();
     (this.text as HTMLSpanElement).textContent = message;
-    element.style.display = 'flex';
+    element.hidden = false;
     this.place();
   }
 
   hide(): void {
-    if (this.element !== null) this.element.style.display = 'none';
+    if (this.element !== null) this.element.hidden = true;
   }
 
   /** Keeps it centred over the canvas when the canvas moves or resizes. */
   place(): void {
-    if (this.element === null || this.element.style.display === 'none') return;
+    if (this.element === null || this.element.hidden) return;
     placeOverCanvas(this.element, this.canvas, { x: this.canvas.clientWidth / 2, y: TOP_MARGIN_PX });
   }
 
@@ -39,20 +40,8 @@ export class NoticeBanner {
   }
 
   private create(): HTMLDivElement {
-    const element = createCanvasOverlayElement(this.canvas, 'div');
+    const element = createCanvasOverlayElement(this.canvas, 'div', NOTICE_CLASS);
     element.setAttribute('role', 'alert');
-    Object.assign(element.style, {
-      transform: 'translateX(-50%)',
-      alignItems: 'center',
-      gap: '12px',
-      maxWidth: '80%',
-      padding: '8px 12px',
-      borderRadius: '6px',
-      background: 'rgba(20, 24, 38, 0.92)',
-      border: '1px solid rgba(255, 255, 255, 0.25)',
-      color: '#f1f2f6',
-      font: '14px system-ui, sans-serif',
-    });
     const text = element.ownerDocument.createElement('span');
     const dismiss = element.ownerDocument.createElement('button');
     dismiss.type = 'button';

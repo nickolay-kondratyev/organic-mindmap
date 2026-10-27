@@ -6,7 +6,8 @@
   "type": "module",
   "files": [
     "dist",
-    "assets/fonts"
+    "assets/fonts",
+    "assets/organic-mindmap.css"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,7 +20,8 @@
       "types": "./dist/react/index.d.ts",
       "import": "./dist/react.js"
     },
-    "./fonts/kalam-latin-400-normal.ttf": "./assets/fonts/kalam/latin-400-normal.ttf"
+    "./fonts/kalam-latin-400-normal.ttf": "./assets/fonts/kalam/latin-400-normal.ttf",
+    "./styles.css": "./assets/organic-mindmap.css"
   },
   "scripts": {
     "prepare": "node scripts/install-browsers.mjs",

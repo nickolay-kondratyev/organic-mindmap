@@ -26,6 +26,9 @@ export interface LabelEditSession {
 const LINE_HEIGHT_FACTOR = 1.5;
 /** Accessible name; also what E2E tests find the input by. */
 export const LABEL_EDITOR_ACCESSIBLE_NAME = 'Node label';
+const EDITOR_CLASS = 'organic-mindmap-label-editor';
+/** Set while the edited node is not in the scene; see the library stylesheet. */
+const OFF_SCENE_CLASS = 'is-off-scene';
 
 /**
  * Inline label input (spec I4) floating over a node. A real `<input>` gives caret, selection, IME and
@@ -43,7 +46,7 @@ export class InlineLabelEditor {
     const input = this.input ?? this.createInput();
     this.session = session;
     input.value = session.text;
-    input.style.display = 'block';
+    input.hidden = false;
     input.focus();
     input.select();
   }
@@ -52,12 +55,9 @@ export class InlineLabelEditor {
   place(placement: LabelEditorPlacement | null): void {
     const input = this.input;
     if (input === null || this.session === null) return;
-    if (placement === null) {
-      input.style.visibility = 'hidden';
-      return;
-    }
+    input.classList.toggle(OFF_SCENE_CLASS, placement === null);
+    if (placement === null) return;
     const height = placement.fontSizePx * LINE_HEIGHT_FACTOR;
-    input.style.visibility = 'visible';
     placeOverCanvas(input, this.canvas, { x: placement.center.x - placement.width / 2, y: placement.center.y - height / 2 });
     input.style.width = `${placement.width}px`;
     input.style.height = `${height}px`;
@@ -75,7 +75,7 @@ export class InlineLabelEditor {
     // Chromium blurs a hidden input only at the next frame; until then keys (e.g. a host's Ctrl+Z) would be the
     // input's. Blurring with the session already null means the blur listener commits nothing.
     this.input.blur();
-    this.input.style.display = 'none';
+    this.input.hidden = true;
   }
 
   dispose(): void {
@@ -85,11 +85,11 @@ export class InlineLabelEditor {
   }
 
   private createInput(): HTMLInputElement {
-    const input = createCanvasOverlayElement(this.canvas, 'input');
+    const input = createCanvasOverlayElement(this.canvas, 'input', EDITOR_CLASS);
     input.type = 'text';
     input.setAttribute('aria-label', LABEL_EDITOR_ACCESSIBLE_NAME);
     input.spellcheck = false;
-    Object.assign(input.style, { display: 'none', border: 'none', outline: 'none', padding: '0', margin: '0', textAlign: 'center' });
+    input.hidden = true;
     input.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') this.finish((session, text) => session.onCommit(text));
       else if (event.key === 'Escape') this.finish((session) => session.onCancel());

@@ -5,12 +5,15 @@ Goal right now is to implement [spec.md](spec.md). Architecture and module seams
 - npm workspaces monorepo. `core/` is the library package `organic-mindmap` (src, demo, tests, bench, configs,
   CHANGELOG). `obsidian-plugin/` is the Obsidian plugin (private package): depends on `organic-mindmap` and imports
   only its public entry (`organic-mindmap`, aliased to `core/src` by `obsidian-plugin/coreAlias.ts`); bundles to
-  `main.js` at the repo root. The repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`,
-  `versions.json`), as Obsidian expects. The root holds shared docs (`spec.md`, `docs/`,
+  `main.js` and `styles.css` (from `obsidian-plugin/styles.css` + the library's `organic-mindmap/styles.css`) at the
+  repo root. The repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`, `versions.json`), as
+  Obsidian expects. The root holds shared docs (`spec.md`, `docs/`,
   tickets) and a private workspace root.
 - A mindmap is one Markdown note flagged `organic-mindmap: 1` (format: `next-steps-prior-to-obsidian.md` "Phase 1a");
   its reader/writer is `obsidian-plugin/src/mindmapNote/`, pure text without `obsidian`.
 - The library never imports `obsidian` (`core/src/noObsidianImports.test.ts`); the plugin never reaches core internals.
+- No static inline styles in DOM code (Obsidian review rule `obsidianmd/no-static-styles-assignment`): use classes in
+  `core/assets/organic-mindmap.css` (library) or `obsidian-plugin/styles.css`; only computed values go inline.
 
 ## Commands
 Run from the repo root; `typecheck`, `test` and `build` cover both packages, the rest delegate to `core` (extra args after `--` are relative to the package).

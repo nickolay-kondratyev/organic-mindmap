@@ -8,6 +8,14 @@ export const REPARENT_DIALOG_LABELS = {
   dontAskAgain: "Don't ask again",
 } as const;
 
+/** Class names styled by the library stylesheet. */
+const DIALOG_CLASSES = {
+  dialog: 'organic-mindmap-reparent-dialog',
+  question: 'organic-mindmap-reparent-question',
+  option: 'organic-mindmap-reparent-option',
+  buttons: 'organic-mindmap-reparent-buttons',
+} as const;
+
 /** Makes `aria-labelledby` ids unique when a page mounts several maps. */
 let dialogCount = 0;
 
@@ -39,7 +47,7 @@ export class ReparentDialog {
     this.returnFocusTo = active instanceof HTMLElement ? active : null;
     parts.text.textContent = session.text;
     parts.dontAskAgain.checked = false;
-    parts.element.style.display = 'flex';
+    parts.element.hidden = false;
     this.place();
     parts.confirm.focus();
   }
@@ -53,7 +61,7 @@ export class ReparentDialog {
   /** Hides and gives focus back; answering is up to the caller (`finish`). */
   private close(): void {
     this.session = null;
-    if (this.parts !== null) this.parts.element.style.display = 'none';
+    if (this.parts !== null) this.parts.element.hidden = true;
     const returnFocusTo = this.returnFocusTo;
     this.returnFocusTo = null;
     if (returnFocusTo?.isConnected === true) returnFocusTo.focus();
@@ -79,36 +87,22 @@ export class ReparentDialog {
   }
 
   private create(): DialogParts {
-    const element = createCanvasOverlayElement(this.canvas, 'div');
+    const element = createCanvasOverlayElement(this.canvas, 'div', DIALOG_CLASSES.dialog);
     const doc = element.ownerDocument;
     dialogCount += 1;
     const textId = `organic-mindmap-reparent-question-${dialogCount}`;
     element.setAttribute('role', 'dialog');
     element.setAttribute('aria-labelledby', textId);
-    Object.assign(element.style, {
-      display: 'none',
-      flexDirection: 'column',
-      gap: '12px',
-      transform: 'translate(-50%, -50%)',
-      maxWidth: '80%',
-      padding: '16px',
-      borderRadius: '8px',
-      // Same look as the notice banner (`NoticeBanner`), so the library's overlays read as one family.
-      background: 'rgba(20, 24, 38, 0.95)',
-      border: '1px solid rgba(255, 255, 255, 0.25)',
-      color: '#f1f2f6',
-      font: '14px system-ui, sans-serif',
-      zIndex: '1',
-    });
+    element.hidden = true;
 
     const text = doc.createElement('p');
     text.id = textId;
-    text.style.margin = '0';
+    text.classList.add(DIALOG_CLASSES.question);
 
     const dontAskAgain = doc.createElement('input');
     dontAskAgain.type = 'checkbox';
     const checkboxLabel = doc.createElement('label');
-    Object.assign(checkboxLabel.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+    checkboxLabel.classList.add(DIALOG_CLASSES.option);
     checkboxLabel.append(dontAskAgain, REPARENT_DIALOG_LABELS.dontAskAgain);
 
     const cancel = button(doc, REPARENT_DIALOG_LABELS.cancel);
@@ -116,7 +110,7 @@ export class ReparentDialog {
     cancel.addEventListener('click', () => this.finish((session) => session.onCancel()));
     confirm.addEventListener('click', () => this.confirm());
     const buttons = doc.createElement('div');
-    Object.assign(buttons.style, { display: 'flex', justifyContent: 'flex-end', gap: '8px' });
+    buttons.classList.add(DIALOG_CLASSES.buttons);
     buttons.append(cancel, confirm);
 
     element.addEventListener('keydown', (event) => {

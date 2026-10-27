@@ -25,7 +25,7 @@ Until the plugin is in Community plugins, build it from source (needs [Node.js](
 git clone https://github.com/nickolay-kondratyev/organic-mindmap.git
 cd organic-mindmap
 npm install
-npm run build                 # builds main.js at the repo root
+npm run build                 # builds main.js and styles.css at the repo root
 ```
 
 The repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`). Link it into your vault:

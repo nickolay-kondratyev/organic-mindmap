@@ -7,6 +7,7 @@ architecture in [docs/architecture.md](../docs/architecture.md).
 ## Use
 
 ```tsx
+import 'organic-mindmap/styles.css'; // once per page: the label editor, notice and reparent dialog over the canvas
 import { REFERENCE_DATA } from 'organic-mindmap';
 import { Mindmap } from 'organic-mindmap/react';
 

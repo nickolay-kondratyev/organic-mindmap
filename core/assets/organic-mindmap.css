@@ -1,0 +1,81 @@
+/*
+ * Organic Mindmap library styles: the DOM overlays drawn over the canvas (inline label editor, notice banner,
+ * reparent dialog). Hosts include this once (`organic-mindmap/styles.css`).
+ * WHY a stylesheet, not inline styles: hosts and themes can override a class; Obsidian's plugin review also rejects
+ * static inline styles and injected <style> elements. Per-frame values (position, size, font) stay inline in the code.
+ */
+
+/* `createCanvasOverlayElement`: positioned against the canvas's offset parent. */
+.organic-mindmap-overlay {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+/* Beats the `display` of the overlay classes below, which `[hidden]`'s user-agent rule alone would not. */
+.organic-mindmap-overlay[hidden] {
+  display: none;
+}
+
+/*
+ * `InlineLabelEditor`: borderless, so only the node's own fill shows around the text. Two classes so it beats host
+ * rules on `input[type='text']` (Obsidian's app.css sets a border and padding there). No `display`: absolute
+ * positioning already makes it a block, and a `display` here would tie with the `[hidden]` rule above.
+ */
+.organic-mindmap-overlay.organic-mindmap-label-editor {
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
+
+/* Its node is not in this frame's scene. `visibility`, not `display: none`, so the input keeps focus and its session. */
+.organic-mindmap-label-editor.is-off-scene {
+  visibility: hidden;
+}
+
+/* `NoticeBanner` and `ReparentDialog` share one look, so the library's overlays read as one family. */
+.organic-mindmap-notice,
+.organic-mindmap-reparent-dialog {
+  display: flex;
+  gap: 12px;
+  max-width: 80%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f1f2f6;
+  font: 14px system-ui, sans-serif;
+}
+
+/* `placeOverCanvas` puts the top-left corner at the canvas's top centre; the transform centres it horizontally. */
+.organic-mindmap-notice {
+  transform: translateX(-50%);
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(20, 24, 38, 0.92);
+}
+
+/* `placeOverCanvas` puts the top-left corner at the canvas centre; the transform centres the dialog on it. */
+.organic-mindmap-reparent-dialog {
+  flex-direction: column;
+  transform: translate(-50%, -50%);
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(20, 24, 38, 0.95);
+  z-index: 1;
+}
+
+.organic-mindmap-reparent-question {
+  margin: 0;
+}
+
+.organic-mindmap-reparent-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.organic-mindmap-reparent-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
