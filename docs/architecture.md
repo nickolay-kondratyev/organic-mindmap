@@ -184,13 +184,14 @@ branches per pointer move, over a frozen base scene.
   confirmed `move` drops the moved subtree's overrides (reported too). Crossing the parent's centre line mirrors the
   subtree around the dragged node:
   `subtreeMoveTo` is the single flip rule used by the drag preview, the stored drop and `applyPositionOverrides`.
-  Hover buttons: "+" on the outer side (both sides for the root) opens the inline editor on a local draft child
-  (`DRAFT_NODE_ID`, not sent until Enter). While they show, the hovered node keeps its hover over its hover area
-  (rectangle around its box and buttons, target `near-handles`), so the pointer can cross the gap to the "+";
-  pressing there pans. No delete button: hosts send `delete` from their own UI. Double-click renames. Editors
-  do not open while an edit is pending. `interaction.allowAdd` / `allowRename` off hide the "+" (`shownHandles`) and
-  keep the editor shut (`editorAllowed`), giving a move-only map; `allowDelete` is reserved for a future in-map
-  delete control. The switches gate only the map's own controls, never the host's `requestEdit`.
+  Hover buttons: a "+" on both sides of every node opens the inline editor on a local draft child
+  (`DRAFT_NODE_ID`, not sent until Enter; only the root's "+" carry `side`). While they show, the hovered node keeps
+  its hover over its hover area (rectangle around its box and buttons, target `near-handles`), so the pointer can
+  cross the gap to either "+"; pressing there pans. No delete button: hosts send `delete` from their own UI.
+  Double-click renames. Editors do not open while an edit is pending. `interaction.allowAdd` / `allowRename` off
+  hide the "+" (`shownHandles`) and keep the editor shut (`editorAllowed`), giving a move-only map; `allowDelete` is
+  reserved for a future in-map delete control. The switches gate only the map's own controls, never the host's
+  `requestEdit`.
   Node clicks (`onNodeClick`, `NodeClickEvent` with node id + DOM modifier keys): a press released within the drag
   threshold on a node, the root included (pressing it still pans: press target `fixed-node`). Hover buttons, their
   hover area and bare canvas are not node clicks (`clickedNodeId`). Click rule: every click is reported at once, so a
