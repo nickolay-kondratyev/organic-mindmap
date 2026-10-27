@@ -1,14 +1,15 @@
 ---
 id: nid_0v1xv98rj4u0fertn6uxlhbeg_e
 title: "Plugin: move a node with its subtree onto another node, and delete a subtree, proven end to end"
-status: open
+status: in_progress
 deps: []
 links: []
 created_iso: 2026-10-27T00:00:08Z
-status_updated_iso: 2026-10-27T00:00:08Z
+status_updated_iso: 2026-10-27T00:00:56Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-0v1xv98r
 tags: [mindmap-editing]
 ---
 
