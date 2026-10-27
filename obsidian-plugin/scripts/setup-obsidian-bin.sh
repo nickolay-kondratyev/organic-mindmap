@@ -34,7 +34,7 @@ log() { echo "setup-obsidian-bin: $*" >&2; }
 
 if [[ "$(uname -s)" != "Linux" ]]; then
 	log "auto-download is Linux-only (got $(uname -s))."
-	log "Set OBSIDIAN_PATH to a local Obsidian binary and re-run. See README."
+	log "Set OBSIDIAN_PATH to a local Obsidian binary and re-run. See docs/development.md."
 	exit 1
 fi
 

@@ -1,14 +1,52 @@
-# Organic Mindmap (Obsidian plugin)
+# Organic Mindmap
 
-Mindmaps for [Obsidian](https://obsidian.md) that feel hand-drawn: organic branches, glyph-outline labels along
-them, a tidy bilateral layout that does not look machine-made.
+Mindmaps for [Obsidian](https://obsidian.md) that feel hand-drawn: organic, tapering branches with their labels
+written along them, and a tidy two-sided layout that does not look machine-made. Each mindmap is a plain Markdown
+note, so it stays readable, linkable and searchable like any other note.
 
-**Status: in development, not released.** Desktop only. Plan: [next-steps-prior-to-obsidian.md](next-steps-prior-to-obsidian.md).
+![A mindmap in Obsidian: "Shakespeare" in the center with colored, curved branches to Vida, Poesia, Historia, Comedia and Tragedia](docs/images/mindmap-in-obsidian.png)
 
-## Mindmap notes
+**Status: in development, not yet in the Community plugins list.** Desktop only, Obsidian 1.12.7 or newer.
 
-A mindmap is a normal Markdown note flagged `organic-mindmap: 1` in its frontmatter. Its nested list is the tree
-(one top-level item = the root), and each item's block id (`^n7f3k`) is the node id:
+## Features
+
+- **A map is a note.** The note's nested list is the tree. Edit it as a map or as Markdown; both stay in sync.
+- **Edit on the map.** Add, rename, move and delete nodes with the mouse; undo and redo with the usual keys.
+- **Your layout sticks.** Drag a node where you want it and it stays there after you reopen the note.
+- **Links work.** `[[Links]]` in a node open the linked note, and Obsidian keeps them updated when notes are renamed.
+- **Make it yours.** Branch colors, fonts and background color, changed live over the map.
+- **Offline.** No network access; every font is bundled.
+
+## Install
+
+Until the plugin is in Community plugins, build it from source (needs [Node.js](https://nodejs.org) and `git`):
+
+```bash
+git clone https://github.com/nickolay-kondratyev/organic-mindmap.git
+cd organic-mindmap
+npm install
+npm run build                 # builds main.js at the repo root
+```
+
+The repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`). Link it into your vault:
+
+```bash
+ln -s "$PWD" "<your vault>/.obsidian/plugins/organic-mindmap"
+```
+
+Then in Obsidian: Settings > Community plugins > enable "Organic Mindmap".
+
+## Use
+
+### Create a mindmap
+
+- Command palette: **Create new mindmap**. It makes `Mindmap <timestamp>.organic-mindmap.md` in your default
+  new-note folder and opens it as a map.
+- File explorer: right-click a folder > **New organic mindmap** makes one in that folder.
+- Or turn an existing note into a map: add `organic-mindmap: 1` to its frontmatter. The note needs exactly one
+  top-level list item (the root).
+
+### What the note looks like
 
 ```markdown
 ---
@@ -19,85 +57,60 @@ organic-mindmap: 1
 		- plain idea ^n9a2b
 ```
 
-- **Create:** command "Create new mindmap" makes `Mindmap <timestamp>.organic-mindmap.md` in your default new-note
-  folder and opens it as a map; "New organic mindmap" in a folder's right-click menu in the file explorer makes it
-  in that folder. Or add the frontmatter flag to any note with one top-level list.
-- **Open:** a flagged note opens as a map wherever you open it (file explorer, links, quick switcher). The map's
-  "..." menu has "Open as Markdown"; command "Toggle mindmap / Markdown view" switches either way.
-- **Edit on the map:** hover a node for "+" (add child), double-click to rename, drag onto another node to move it
-  there. Every change is written to the note at once; edits typed in a Markdown tab (or synced in) show up on the
-  open map.
-- **Positions:** drag a node to empty space and it stays there: the spot is saved in the note (as an offset from its
-  parent, in a hidden `%%` layout block) and comes back when you reopen the note. Nodes you never dragged keep the
-  automatic layout.
-- **Delete:** right-click a node > "Delete" removes it and its nested items from the note. The notice that follows
-  has "Undo". The root cannot be deleted.
-- **Undo / redo:** Ctrl+Z (Cmd+Z) undoes the last map change, Ctrl+Shift+Z (Cmd+Shift+Z) redoes it; one action
-  (add, rename, move, delete, drag) is one step. Steps apply as long as the note has not changed outside the map
-  (typing in a Markdown tab, sync); after that the map's history is gone and a notice says so. The history lives
-  with the open map: switching the view to another note or closing it drops it.
-- **Links:** an item that contains a `[[link]]` shows the link's text and opens it on click (Ctrl/Cmd-click: new
-  tab). Since the mindmap is a normal note, Obsidian keeps its links updated when a linked note is renamed.
-- A note the plugin cannot read as a map says why and offers "Open as Markdown".
-- **Settings** (Settings > Organic Mindmap): branch colors (Warm, Vivid, Muted, Monochrome), node font and branch font
-  (Kalam, Caveat, Patrick Hand, Nunito), background color, and "Restore look defaults". The gear in a map's top-right
-  corner opens the same settings over the map, so you see each change as you make it. Changes apply to every open
-  map at once and survive restarts.
-- No network: every font is bundled (SIL OFL; licenses next to the TTFs in `core/assets/fonts/` and
-  `obsidian-plugin/assets/fonts/`).
+The nested list is the tree. The `^n7f3k` block ids are added for you and keep each node's identity. Dragged node
+positions are saved in a hidden `%%` comment block after the list.
 
-## Install from source (for now)
+### Open
 
-```bash
-npm install
-npm run build                 # builds the library and main.js at the repo root
-```
+A mindmap note opens as a map wherever you open it (file explorer, links, quick switcher). To see the Markdown, use
+"Open as Markdown" in the map's "..." menu, or the command **Toggle mindmap / Markdown view** (works both ways).
 
-The repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`). Link it into your vault, then enable
-"Organic Mindmap" under Settings > Community plugins:
+### Edit on the map
 
-```bash
-ln -s "$PWD" "<your vault>/.obsidian/plugins/organic-mindmap"
-```
+| To | Do |
+|---|---|
+| Add a child | Hover a node, click **+** |
+| Rename | Double-click the node |
+| Move under another node | Drag it onto that node |
+| Place it somewhere else | Drag it to empty space; the spot is saved |
+| Delete | Right-click > **Delete** (the notice that follows has **Undo**; the root cannot be deleted) |
+| Undo / redo | Ctrl+Z / Ctrl+Shift+Z (Cmd on macOS) |
+| Open a link | Click a node with a `[[link]]` (Ctrl/Cmd-click: new tab) |
 
-`npm run dev:plugin` rebuilds `main.js` on every source change; reload the plugin in Obsidian to pick it up. Or
-`npm run setup:dev-vault` and open `obsidian-plugin/.dev-vault/` as a vault (the plugin is already installed there).
+Every change is written to the note right away. Edits made in a Markdown tab, or synced in from another device, show
+up on the open map.
 
-## Repo layout
+Undo/redo covers changes made on the map, one step per action. If the note changes outside the map (typing in a
+Markdown tab, sync), the map's history is cleared and a notice tells you. Switching the view to another note or
+closing it also clears the history.
 
-npm workspaces monorepo:
+Nodes you never dragged follow the automatic layout. A dragged node's position is kept relative to its parent, so it
+moves along when the parent moves.
 
-| Package | Path | What |
-|---|---|---|
-| `organic-mindmap` | [`core/`](core/README.md) | The mindmap library (framework-free core + React wrapper), its demo and tests. Usable on its own; knows nothing about Obsidian. |
-| plugin | `obsidian-plugin/` | The Obsidian plugin, built on the library's public API. Bundles to `main.js` at the repo root; the repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`, `versions.json`). |
+If a note cannot be shown as a map, the view says why and offers "Open as Markdown".
 
-Requirements: [spec.md](spec.md). Architecture: [docs/architecture.md](docs/architecture.md).
+### Settings
 
-## Develop
+Settings > Organic Mindmap, or the gear in a map's top-right corner (opens the settings over the map, so you see each
+change as you make it):
 
-```bash
-npm install                     # deps for both packages + Playwright Chromium
-npm run typecheck && npm test   # both packages (Vitest unit tests)
-npm run build                   # library to core/dist/ and plugin to obsidian-plugin/main.js
-npm run build:plugin            # plugin only; `npm run dev:plugin` rebuilds on change
-npm run e2e                     # library demo E2E (Playwright, Chromium)
-npm run test:e2e:obsidian       # plugin E2E in a REAL Obsidian (see below)
-```
+- **Branch colors:** Warm, Vivid, Muted, Monochrome
+- **Node font** and **branch font:** Kalam, Caveat, Patrick Hand, Nunito
+- **Background color**
+- **Restore look defaults**
 
-### Plugin E2E in a real Obsidian
+Changes apply to every open map at once and are kept across restarts.
 
-`npm run test:e2e:obsidian` builds the plugin, seeds `obsidian-plugin/.dev-vault/`, boots a real Obsidian (Electron)
-on a throwaway copy of that vault and drives it with Playwright over CDP. Not part of `npm test` (slow; a release
-gate). Runs headless on a display-less Linux box: the first run downloads a pinned Obsidian (`OBSIDIAN_VERSION` in
-`obsidian-plugin/scripts/setup-obsidian-bin.sh`) into git-ignored `.tmp/obsidian-e2e/bin/`.
+## Privacy
 
-```bash
-npm run test:e2e:obsidian                       # Linux: downloads Obsidian once, headless if no display
-npm run test:e2e:obsidian -- smoke.e2e.ts        # one spec
-OBSIDIAN_PATH='/Applications/Obsidian.app/Contents/MacOS/Obsidian' npm run test:e2e:obsidian   # macOS / your own binary
-```
+The plugin makes no network requests. All fonts are bundled (SIL Open Font License; license files sit next to the
+fonts in `core/assets/fonts/` and `obsidian-plugin/assets/fonts/`).
 
-Env: `OBSIDIAN_PATH` (use this binary, skips the download), `OBSIDIAN_VERSION` (download another build for one run),
-`OBSIDIAN_CACHE_DIR` (share one download across checkouts), `OBSIDIAN_E2E_EXTRA_ARGS` (Chromium flags; defaults to
-headless flags when no display).
+## For developers
+
+- Build, test and repo layout: [docs/development.md](docs/development.md)
+- The plugin is built on the standalone mindmap library in [`core/`](core/README.md), which also runs outside Obsidian.
+
+## License
+
+[Kondratyev Source Available License 3.0](LICENSE.md).
