@@ -86,6 +86,7 @@ export const FIELD_LABELS: Readonly<Record<string, string>> = {
   nodeText: 'Node label',
   branchText: 'Branch label',
   textOutline: 'Label outline',
+  link: 'Link label',
   text: 'Label',
   confirmReparent: 'Ask before making a node a child',
   allowAdd: 'Allow adding nodes (hover "+")',

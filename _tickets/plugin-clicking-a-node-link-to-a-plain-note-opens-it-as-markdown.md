@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-27T15:19:58Z
 id: nid_fai5tp8qj4o6vpf0gmjj6h8rg_e
 title: "Plugin: clicking a node link to a plain note opens it as Markdown"
-status: in_progress
+status: closed
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:12:36Z
+status_updated_iso: 2026-10-27T15:19:58Z
 pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-fai5tp8q
 type: feature
 priority: 1

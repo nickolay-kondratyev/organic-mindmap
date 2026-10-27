@@ -1,7 +1,15 @@
 import type { NodeTextFitConfig } from '../config/config';
 import type { Point } from '../model/node';
-import type { LabelInk } from './labelPainter';
+import { paintUnderline, type LabelInk } from './labelPainter';
+import { straightLabelUnderline } from './labelUnderline';
 import { ELLIPSIS, fitNodeText, type NodeTextMeasure } from './nodeTextFit';
+
+/**
+ * How far the alphabetic baseline sits below the `middle` text baseline, in em; about 0.3 for common system fonts
+ * (ascent ~0.8, descent ~0.2). Deliberately a constant: close enough for an
+ * underline under a fallback label, and no reliance on `TextMetrics` baseline fields.
+ */
+const BASELINE_BELOW_MIDDLE_EM = 0.3;
 
 /** Width of `text` drawn by the system at `sizePx`; the renderer backs it with `ctx.measureText`. */
 export type SystemTextWidth = (text: string, sizePx: number) => number;
@@ -74,6 +82,10 @@ export function paintSystemTextLabel(
   letterSpacing(fitted.sizePx);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  if (ink.underline) {
+    const widthPx = ctx.measureText(fitted.text).width;
+    paintUnderline(ctx, straightLabelUnderline(center, widthPx, BASELINE_BELOW_MIDDLE_EM * fitted.sizePx, fitted.sizePx), ink);
+  }
   if (ink.outlineWidthPx > 0) {
     ctx.lineJoin = 'round';
     // The fill covers the inner half of the stroke, so double it to show `outlineWidthPx` outside the glyph.

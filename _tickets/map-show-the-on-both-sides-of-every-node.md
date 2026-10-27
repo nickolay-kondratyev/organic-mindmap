@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-27T15:18:19Z
 id: nid_8ldir8fohuk5xcwue8ej8noex_e
 title: "Map: show the '+' on both sides of every node"
-status: in_progress
+status: closed
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:12:36Z
+status_updated_iso: 2026-10-27T15:18:19Z
 pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-8ldir8fo
 type: feature
 priority: 1

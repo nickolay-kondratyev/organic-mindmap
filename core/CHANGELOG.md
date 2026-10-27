@@ -7,6 +7,9 @@ While 0.x, a minor version may change the API.
 ## Unreleased
 
 ### Added
+- Link nodes: `MindmapNode.link: true` draws the node's label underlined and in the new `theme.color.link` (pale
+  sky blue by default), on the node and along its branch, with the pointer cursor, so the user can tell the node
+  opens something on click. Unmarked nodes look as before.
 - Restore saved node positions: `nodeOffsets` (mount option and `<Mindmap>` prop) and `setNodeOffsets(offsets)` on
   the handle take user-placed nodes by id as offsets from their parent (`NodeOffsets`, e.g.
   `{ "n7f3k": { "dx": 120, "dy": -40 } }`). `onNodeOffsetsChange(offsets, cause)` reports all of them after every drop
@@ -18,6 +21,8 @@ While 0.x, a minor version may change the API.
   `requestEdit`). While set, the browser's context menu is suppressed on nodes only; bare canvas keeps it and does not
   fire the hook. `<Mindmap>` reads whether it is set once at mount.
 - Demo: right-click a node for a "Delete" menu that sends the delete through `requestEdit`.
+- `getConfig()` on the handle: the full `MindmapConfig` the map draws with (`config` merged over the defaults, plus
+  changes made inside the map), so a host can read back what `setConfig` and `onConfigChange` left it with.
 
 ### Changed
 - Renamed from `natural-mindmap` to `organic-mindmap`: import `organic-mindmap` and `organic-mindmap/react`. The
@@ -26,6 +31,8 @@ While 0.x, a minor version may change the API.
   (`organic-mindmap-font-*`), the pending/draft node ids and the console warning prefix. No behavior change.
 - A dragged node now keeps its place relative to its parent: when the auto layout moves the parent (e.g. a node is
   added), the dragged node moves with it instead of staying at its old scene point.
+- Every node shows its hover "+" on both sides (before: only the root; other nodes had one on their tree side, which
+  pointed into the map after the branch was dragged across the root). Both add a child.
 
 ## 0.2.0
 

@@ -29,6 +29,14 @@ describe('restoreConfig', () => {
     expect(restoreConfig({ branch: { taper: 0.5 } })).toEqual({ ...DEFAULT_CONFIG, branch: { ...DEFAULT_CONFIG.branch, taper: 0.5 } });
   });
 
+  it('GIVEN settings saved before link nodes existed (no link color) WHEN restoring THEN the default link color is used', () => {
+    expect(restoreConfig({ theme: { color: { background: '#123456' } } }).theme.color.link).toBe(DEFAULT_CONFIG.theme.color.link);
+  });
+
+  it('GIVEN a stored link color WHEN restoring THEN it is used', () => {
+    expect(restoreConfig({ theme: { color: { link: '#00ff00' } } }).theme.color.link).toBe('#00ff00');
+  });
+
   it('GIVEN a leaf of the wrong type WHEN restoring THEN that leaf falls back to its default', () => {
     expect(restoreConfig({ branch: { taper: 'thin' } }).branch.taper).toBe(DEFAULT_CONFIG.branch.taper);
   });

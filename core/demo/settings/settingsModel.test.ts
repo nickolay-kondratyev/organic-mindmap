@@ -35,6 +35,10 @@ describe('GIVEN the settings derived from the default config', () => {
     expect(field('theme.color.background').kind).toBe('color');
   });
 
+  it('WHEN looking at the link label color THEN it is a color picker', () => {
+    expect(field('theme.color.link').kind).toBe('color');
+  });
+
   it('WHEN looking at a non-hex color (the label outline is rgba) THEN it is a text field', () => {
     expect(field('theme.color.textOutline').kind).toBe('text');
   });

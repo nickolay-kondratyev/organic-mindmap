@@ -11,10 +11,10 @@ import {
   type NodeOffsets,
   type NodeOffsetsChangeCause,
 } from 'organic-mindmap';
-import type { MindmapNote } from '../mindmapNote';
+import { firstLinkTarget, type MindmapNote } from '../mindmapNote';
+import type { MapSettings } from '../settings/mapSettings';
 import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
 import { EditHistory } from './editHistory';
-import { firstLinkTarget } from './linkTarget';
 import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type UndoResult } from './noteSession';
 import { keyBelongsToTextEntry } from './textEntryFocus';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
@@ -36,6 +36,8 @@ const UNDO_NOTICE_MS = 10_000;
 
 export interface MindmapNoteViewDeps {
   readonly fontFetcher: FontFetcher;
+  /** The shared map config: read at mount, followed while mounted, told about changes made inside the map. */
+  readonly settings: MapSettings;
   /** Opens this view's note as Markdown in the same leaf (the plugin remembers the choice for the leaf). */
   readonly openAsMarkdown: (view: MindmapNoteView) => Promise<void>;
 }
@@ -81,8 +83,15 @@ export class MindmapNoteView extends FileView {
     return VIEW_ICON;
   }
 
-  override canAcceptExtension(extension: string): boolean {
-    return extension === 'md';
+  /**
+   * WHY no file at all: `WorkspaceLeaf.openFile` (link clicks, file explorer, quick switcher) keeps the leaf's view
+   * type when its `FileView` accepts the file's extension, so accepting `md` loaded plain notes into the map (its
+   * "not a mindmap note" problem screen). Declining makes every such open ask for `markdown`, and the routing in
+   * `main.ts` turns that into the map only for mindmap notes: one detection rule. Explicit map requests
+   * (`setViewState`, history) do not consult this.
+   */
+  override canAcceptExtension(): boolean {
+    return false;
   }
 
   /** The library handle while a readable note is shown (host UI and E2E read the map through it). */
@@ -97,6 +106,7 @@ export class MindmapNoteView extends FileView {
     this.scope = new Scope(this.app.scope);
     this.scope.register(['Mod'], UNDO_KEY, (event) => this.handleHistoryKey(event, () => this.undo()));
     this.scope.register(['Mod', 'Shift'], UNDO_KEY, (event) => this.handleHistoryKey(event, () => this.redo()));
+    this.register(this.deps.settings.onChange((config) => this.handle?.setConfig(config)));
     this.registerEvent(
       this.app.vault.on('modify', (file) => {
         if (this.file !== null && file.path === this.file.path) void this.reloadFromFile();
@@ -171,7 +181,9 @@ export class MindmapNoteView extends FileView {
     this.handle = mountMindmap(canvas, {
       data: note.toMindmapData(),
       nodeOffsets: note.positions,
+      config: this.deps.settings.config,
       fontFetcher: this.deps.fontFetcher,
+      onConfigChange: (config) => this.deps.settings.replace(config),
       onEditRequest: (request) => this.writeEdit(request),
       onNodeOffsetsChange: (offsets, cause) => void this.savePositions(offsets, cause),
       onNodeClick: (event) => this.openNodeLink(event),

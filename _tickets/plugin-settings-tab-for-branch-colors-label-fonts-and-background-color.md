@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-27T15:32:08Z
 id: nid_3dc4tbkt1il822ulzdmloxna1_e
 title: "Plugin: settings tab for branch colors, label fonts and background color"
-status: in_progress
+status: closed
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:12:36Z
+status_updated_iso: 2026-10-27T15:32:08Z
 pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-3dc4tbkt
 type: feature
 priority: 1

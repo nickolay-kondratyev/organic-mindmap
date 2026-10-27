@@ -132,6 +132,9 @@ branches per pointer move, over a frozen base scene.
   and fit via the R15 cascade in `text/branchTextFit.ts`. Node labels fit via `text/nodeTextFit.ts`: shrink down to
   `text.nodeFit.minFontScale` (default 0 = unlimited, today's look), then cut and end with "…"; the fit is
   measurement-agnostic (glyph runs or `measureText`).
+  Link nodes (`MindmapNode.link`, set by the host) are inked in `theme.color.link` and underlined on both the node
+  and the branch (`text/labelUnderline.ts`: one segment under each placed glyph, so the line follows the curve;
+  painted before the glyphs with the same outline), and show the pointer cursor. Unmarked labels are unchanged.
   Fallback (the one R17 exception): a label with a character its font lacks (`LoadedFont.coversText`: glyph 0 by
   code point; whitespace, U+200D and variation selectors never count) is skipped on its branch and drawn on its node
   by `paintSystemTextLabel` with `fillText` and the CSS family list from `CssFontFaces` (label font first, so the
@@ -184,13 +187,14 @@ branches per pointer move, over a frozen base scene.
   confirmed `move` drops the moved subtree's overrides (reported too). Crossing the parent's centre line mirrors the
   subtree around the dragged node:
   `subtreeMoveTo` is the single flip rule used by the drag preview, the stored drop and `applyPositionOverrides`.
-  Hover buttons: "+" on the outer side (both sides for the root) opens the inline editor on a local draft child
-  (`DRAFT_NODE_ID`, not sent until Enter). While they show, the hovered node keeps its hover over its hover area
-  (rectangle around its box and buttons, target `near-handles`), so the pointer can cross the gap to the "+";
-  pressing there pans. No delete button: hosts send `delete` from their own UI. Double-click renames. Editors
-  do not open while an edit is pending. `interaction.allowAdd` / `allowRename` off hide the "+" (`shownHandles`) and
-  keep the editor shut (`editorAllowed`), giving a move-only map; `allowDelete` is reserved for a future in-map
-  delete control. The switches gate only the map's own controls, never the host's `requestEdit`.
+  Hover buttons: a "+" on both sides of every node opens the inline editor on a local draft child
+  (`DRAFT_NODE_ID`, not sent until Enter; only the root's "+" carry `side`). While they show, the hovered node keeps
+  its hover over its hover area (rectangle around its box and buttons, target `near-handles`), so the pointer can
+  cross the gap to either "+"; pressing there pans. No delete button: hosts send `delete` from their own UI.
+  Double-click renames. Editors do not open while an edit is pending. `interaction.allowAdd` / `allowRename` off
+  hide the "+" (`shownHandles`) and keep the editor shut (`editorAllowed`), giving a move-only map; `allowDelete` is
+  reserved for a future in-map delete control. The switches gate only the map's own controls, never the host's
+  `requestEdit`.
   Node clicks (`onNodeClick`, `NodeClickEvent` with node id + DOM modifier keys): a press released within the drag
   threshold on a node, the root included (pressing it still pans: press target `fixed-node`). Hover buttons, their
   hover area and bare canvas are not node clicks (`clickedNodeId`). Click rule: every click is reported at once, so a
@@ -257,7 +261,9 @@ page and loads none of the runner code or CSS.
   `setPositions` writes the whole offsets set the map reports and drops ids not in the list; `move` and `delete`
   drop the branch's saved offsets in the same write, so Undo restores them with the branch), and
   `newMindmapNoteText`. It parses the text itself (WHY-NOT the metadata cache: it lags behind typing and is missing
-  in unit tests). Ids generated for items without a block id only exist in that read and reach the file with the
+  in unit tests). `toMindmapData` marks items with a `[[link]]` / `![[embed]]` as `link` by the same rule a click
+  uses to open one (`linkTarget.ts` `firstLinkTarget`), so looking like a link and opening one never disagree.
+  Ids generated for items without a block id only exist in that read and reach the file with the
   next write, so writes always go through the `MindmapNote` the map was drawn from.
 - `src/mapView/` is the map of one mindmap note. `MindmapNoteView` (a `FileView`, the only file importing
   `obsidian` besides `main.ts`) mounts `mountMindmap` on a canvas, re-reads the note on every `vault` `modify` of its
@@ -286,10 +292,25 @@ page and loads none of the runner code or CSS.
   file text, not by name or metadata cache, so there is one rule and no indexing lag. The wrap itself is
   `viewRouting.ts` over `monkey-around` (what Kanban uses): unloading restores the original only when ours is
   still the outermost wrapper, else ours stays as a pass-through, so another plugin's later wrap survives our unload.
-  Node clicks open the first `[[link]]` of the item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
-  `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`,
-  esbuild `binary` loader) behind the library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not
-  bundled), so the plugin never fetches from a CDN and still imports only the library's public entry points.
+  `MindmapNoteView.canAcceptExtension` is `false`: `leaf.openFile` (links, file explorer, quick switcher) keeps the
+  leaf's view type for a `FileView` that accepts the extension, which loaded plain notes into the map; declining
+  makes those opens ask for `markdown`, so the routing above decides. Node clicks open the first `[[link]]` of the
+  item (`mindmapNote/linkTarget.ts`) via `workspace.openLinkText`. Fonts:
+  `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`)
+  and the plugin's own vendored choices (`assets/fonts/<name>/`, SIL OFL) with the esbuild `binary` loader, behind the
+  library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not bundled), so the plugin never fetches from
+  a CDN and still imports only the library's public entry points.
+- `src/settings/` is the settings tab over the library config. `MapSettings` (pure) holds the one `MindmapConfig`
+  every map draws with: loaded through the library's `SettingsPersistence` over `loadData`/`saveData` (`main.ts`,
+  before any view mounts), written by explicit setters (palette, background, node/branch font, `resetLook`) and by
+  `replace` for changes made inside a map (`onConfigChange`, e.g. "Don't ask again", so they survive restarts too);
+  every write is stored and pushed to `onChange` listeners, and each `MindmapNoteView` mounts with `settings.config`
+  and follows with `setConfig`. `palettePresets.ts` names a few palettes (default length, every fill clears
+  `MIN_WHITE_TEXT_CONTRAST` for white labels; a stored palette matching none shows as "Custom" and is kept);
+  `fontChoices.ts` maps bundled fonts to the pinned Fontsource URLs the config stores, and `withBundledFontsOnly`
+  swaps an unbundled stored URL for the default font at load. `MapSettingsTab` (imports `obsidian`) is thin: native
+  `Setting` dropdowns, a color picker and one reset scoped to what the tab shows. Presets and choices are plugin-side
+  on purpose: the library stays a config, not a catalogue.
 - Obsidian E2E (`npm run test:e2e:obsidian`, `e2e/*.e2e.ts`): `scripts/run-e2e.sh` provisions a pinned Obsidian
   (`scripts/setup-obsidian-bin.sh`, Linux download into `.tmp/obsidian-e2e/bin/`, or `OBSIDIAN_PATH`), seeds
   `.dev-vault/` with the built plugin, then `e2e/obsidianHarness.ts` spawns Obsidian on a throwaway copy of the vault

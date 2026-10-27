@@ -38,7 +38,11 @@ organic-mindmap: 1
 - **Links:** an item that contains a `[[link]]` shows the link's text and opens it on click (Ctrl/Cmd-click: new
   tab). Since the mindmap is a normal note, Obsidian keeps its links updated when a linked note is renamed.
 - A note the plugin cannot read as a map says why and offers "Open as Markdown".
-- No network: the Kalam font is bundled (SIL OFL, `core/assets/fonts/kalam/OFL.txt`).
+- **Settings** (Settings > Organic Mindmap): branch colors (Warm, Vivid, Muted, Monochrome), node font and branch font
+  (Kalam, Caveat, Patrick Hand, Nunito), background color, and "Restore look defaults". Changes apply to every open
+  map at once and survive restarts.
+- No network: every font is bundled (SIL OFL; licenses next to the TTFs in `core/assets/fonts/` and
+  `obsidian-plugin/assets/fonts/`).
 
 ## Install from source (for now)
 

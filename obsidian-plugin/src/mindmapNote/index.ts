@@ -6,5 +6,6 @@
 export type { BlockIdSource } from './blockId';
 export { isMindmapNote, newMindmapNoteText } from './frontmatter';
 export { LAYOUT_BLOCK_LANGUAGE } from './layoutBlock';
+export { firstLinkTarget } from './linkTarget';
 export { MindmapNote, type NoteNode, type NoteWriteResult } from './mindmapNote';
 export { NOTE_PROBLEM, readMindmapNote, type NoteReadResult } from './readMindmapNote';

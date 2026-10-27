@@ -18,10 +18,10 @@ describe('readMindmapNote', () => {
       '%%',
     );
 
-    it('WHEN reading THEN the list is the tree with labels as shown', () => {
+    it('WHEN reading THEN the list is the tree with labels as shown and the link item marked', () => {
       expect(readNote(text).toMindmapData()).toEqual([
         { id: 'root', parentId: null, text: 'Project Phoenix' },
-        { id: 'n7f3k', parentId: 'root', text: 'Some note' },
+        { id: 'n7f3k', parentId: 'root', text: 'Some note', link: true },
         { id: 'n9a2b', parentId: 'n7f3k', text: 'plain idea' },
       ]);
     });
@@ -44,6 +44,31 @@ describe('readMindmapNote', () => {
 
     it('WHEN reading THEN the label shows the alias and the note name', () => {
       expect(readNote(text).nodes[1]?.label).toBe('alias and Other');
+    });
+  });
+
+  describe('GIVEN items with a link, an embed, text around a link, an empty link and no link', () => {
+    const text = noteText('- root ^r', '\t- [[Some note]] ^l', '\t- ![[Image.png]] ^e', '\t- see [[Other]] later ^t', '\t- [[]] ^x', '\t- plain idea ^p');
+    const linkOf = (id: string): boolean | undefined => readNote(text).toMindmapData().find((node) => node.id === id)?.link;
+
+    it('WHEN reading THEN the link item is marked as a link', () => {
+      expect(linkOf('l')).toBe(true);
+    });
+
+    it('WHEN reading THEN the embed item is marked as a link', () => {
+      expect(linkOf('e')).toBe(true);
+    });
+
+    it('WHEN reading THEN an item with text around its link is marked as a link', () => {
+      expect(linkOf('t')).toBe(true);
+    });
+
+    it('WHEN reading THEN an item with an empty link (nothing a click could open) is not marked', () => {
+      expect(linkOf('x')).toBeUndefined();
+    });
+
+    it('WHEN reading THEN the plain item is not marked', () => {
+      expect(linkOf('p')).toBeUndefined();
     });
   });
 
