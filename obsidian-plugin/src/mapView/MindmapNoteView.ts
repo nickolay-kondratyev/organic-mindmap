@@ -69,8 +69,15 @@ export class MindmapNoteView extends FileView {
     return VIEW_ICON;
   }
 
-  override canAcceptExtension(extension: string): boolean {
-    return extension === 'md';
+  /**
+   * WHY no file at all: `WorkspaceLeaf.openFile` (link clicks, file explorer, quick switcher) keeps the leaf's view
+   * type when its `FileView` accepts the file's extension, so accepting `md` loaded plain notes into the map (its
+   * "not a mindmap note" problem screen). Declining makes every such open ask for `markdown`, and the routing in
+   * `main.ts` turns that into the map only for mindmap notes: one detection rule. Explicit map requests
+   * (`setViewState`, history) do not consult this.
+   */
+  override canAcceptExtension(): boolean {
+    return false;
   }
 
   /** The library handle while a readable note is shown (host UI and E2E read the map through it). */
