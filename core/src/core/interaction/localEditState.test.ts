@@ -9,6 +9,7 @@ import {
   overridesFromNodeOffsets,
   type NodeOffset,
   type NodeOffsets,
+  type NodeOffsetsChangeCause,
   type PositionOverrides,
 } from '../layout/positionOverrides';
 import type { MindmapData, NodeId, Point } from '../model/node';
@@ -85,14 +86,20 @@ describe('LocalEditState', () => {
   let retries: (EditRequest | null)[];
   /** Every override set reported for the host, in order. */
   let reported: PositionOverrides[];
+  /** The cause given with each report, in order. */
+  let reportedCauses: NodeOffsetsChangeCause[];
 
   beforeEach(() => {
     host = new ManualHost();
     retries = [];
     reported = [];
+    reportedCauses = [];
     // Wired like the mount: every status change reaches the state.
     session = new EditSession(DATA, host.handle, (status) => retries.push(state.onEditStatusChange(status)));
-    state = new LocalEditState(session, (overrides) => reported.push(overrides));
+    state = new LocalEditState(session, (overrides, cause) => {
+      reported.push(overrides);
+      reportedCauses.push(cause);
+    });
   });
 
   describe('GIVEN no draft and no pending edit', () => {
@@ -160,6 +167,10 @@ describe('LocalEditState', () => {
 
     it('WHEN the drop is handled THEN the host is told the overrides with a in them', () => {
       expect(reported).toEqual([state.effectiveOverrides()]);
+    });
+
+    it('WHEN the drop is handled THEN the host is told the cause is a drop', () => {
+      expect(reportedCauses).toEqual(['drop']);
     });
   });
 
@@ -237,6 +248,12 @@ describe('LocalEditState', () => {
         host.resolve(A_MOVED_UNDER_B);
         await settledOf(result);
         expect([...reported.at(-1)!.keys()]).toEqual(['b']);
+      });
+
+      it('WHEN the host confirms THEN the host is told the cause is the confirmed move', async () => {
+        host.resolve(A_MOVED_UNDER_B);
+        await settledOf(result);
+        expect(reportedCauses.at(-1)).toBe('confirmedMove');
       });
 
       it('WHEN the host rejects THEN all overrides are kept', async () => {

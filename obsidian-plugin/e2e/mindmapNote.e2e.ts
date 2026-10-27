@@ -21,7 +21,9 @@ import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
  * node from its right-click menu, then "Undo" -> the note text is back (ticket nid_48incacjmuach0kymaasz36du_e);
  * drag a node with a child onto another node and confirm "Make child" -> the branch is nested there in the note, and
  * deleting a node removes its child too (ticket nid_0v1xv98rj4u0fertn6uxlhbeg_e); click a link node -> a plain note opens
- * as Markdown, a mindmap note as a map, and going back returns to the map (ticket nid_fai5tp8qj4o6vpf0gmjj6h8rg_e).
+ * as Markdown, a mindmap note as a map, and going back returns to the map (ticket nid_fai5tp8qj4o6vpf0gmjj6h8rg_e);
+ * add a child, Ctrl+Z -> the child is gone from the file, Ctrl+Shift+Z -> it is back
+ * (ticket nid_x9jc2ml9mws9tn4l013zuc68r_e).
  * Everything else is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
  * import `obsidian`.
  */
@@ -65,6 +67,12 @@ const GO_BACK_COMMAND_ID = 'app:go-back';
 const NEW_PARENT_ID = 'cellar';
 /** The moved branch as the note should hold it: last child of the new parent, every level re-indented, ids kept. */
 const MOVED_BRANCH_LINES = '\t- Cellar ^cellar\n\t\t- Pantry ^pantry\n\t\t\t- Spices ^spices\n';
+const UNDO_MAP_PATH = 'Undo map.md';
+const UNDO_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Lab ^root', '\t- Bench ^bench', ''].join('\n');
+const UNDONE_CHILD_TEXT = 'Microscope';
+/** Obsidian's Mod is Control on Linux, where the E2E runs. */
+const UNDO_SHORTCUT = 'Control+z';
+const REDO_SHORTCUT = 'Control+Shift+z';
 /** Screen px to drag the node straight down; far enough to be a clear move, into empty canvas. */
 const DRAG_DOWN_PX = 120;
 const DRAG_STEPS = 12;
@@ -90,6 +98,7 @@ test.beforeAll(async () => {
       [LINKS_MAP_PATH]: LINKS_MAP_TEXT,
       [PLAIN_NOTE_PATH]: '# Plain note\n\nJust text.\n',
       [LINKED_MAP_PATH]: LINKED_MAP_TEXT,
+      [UNDO_MAP_PATH]: UNDO_MAP_TEXT,
     },
   });
   page = harness.page;
@@ -382,5 +391,30 @@ test.describe('GIVEN a map with link nodes to a plain note and to a mindmap note
   test('WHEN a plain note is opened in the map\'s leaf another way (as the file explorer does) THEN it opens as Markdown', async () => {
     await harness.openFile(PLAIN_NOTE_PATH);
     await expect.poll(activeViewAndFile).toEqual({ type: MARKDOWN_VIEW_TYPE, path: PLAIN_NOTE_PATH });
+  });
+});
+
+test.describe('GIVEN a child added on the map', () => {
+  test.beforeAll(async () => {
+    await harness.openFile(UNDO_MAP_PATH);
+    await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
+    await addChildViaPlus('root', UNDONE_CHILD_TEXT);
+    // The map shows the child once the view has the written note; the undo keys may come at any time after the add
+    // (an undo queues behind the add's write), so this wait is only for the map state the later test reads.
+    await expect.poll(async () => (await activeMapData())?.map((node) => node.text)).toContain(UNDONE_CHILD_TEXT);
+  });
+
+  test('WHEN Ctrl+Z is pressed THEN the file text is back to what it was before the add', async () => {
+    await page.keyboard.press(UNDO_SHORTCUT);
+    await expect.poll(() => vaultFileText(UNDO_MAP_PATH)).toBe(UNDO_MAP_TEXT);
+  });
+
+  test('WHEN Ctrl+Shift+Z is pressed after the undo THEN the file holds the child again', async () => {
+    await page.keyboard.press(REDO_SHORTCUT);
+    await expect.poll(() => vaultFileText(UNDO_MAP_PATH)).toContain(UNDONE_CHILD_TEXT);
+  });
+
+  test('WHEN the map was undone and redone THEN the map shows the child', async () => {
+    await expect.poll(async () => (await activeMapData())?.map((node) => node.text)).toContain(UNDONE_CHILD_TEXT);
   });
 });

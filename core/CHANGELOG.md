@@ -12,9 +12,10 @@ While 0.x, a minor version may change the API.
   opens something on click. Unmarked nodes look as before.
 - Restore saved node positions: `nodeOffsets` (mount option and `<Mindmap>` prop) and `setNodeOffsets(offsets)` on
   the handle take user-placed nodes by id as offsets from their parent (`NodeOffsets`, e.g.
-  `{ "n7f3k": { "dx": 120, "dy": -40 } }`). `onNodeOffsetsChange(offsets)` reports all of them after every drop (and
-  after a confirmed reparent clears the moved branch), in the same shape, so the host saves it and hands it back
-  unchanged. Unknown ids and entries without numeric `dx`/`dy` are ignored.
+  `{ "n7f3k": { "dx": 120, "dy": -40 } }`). `onNodeOffsetsChange(offsets, cause)` reports all of them after every drop
+  (`cause: 'drop'`) and after a confirmed reparent clears the moved branch (`cause: 'confirmedMove'`, the same person
+  action as that edit, so a host with undo can fold both into one step; `NodeOffsetsChangeCause`), in the same shape,
+  so the host saves it and hands it back unchanged. Unknown ids and entries without numeric `dx`/`dy` are ignored.
 - `onNodeContextMenu(event)` (mount option and `<Mindmap>` prop): a right-click on a node, root included, with the
   node id and the viewport point (`clientPoint`), so the host can open its own menu there (e.g. delete via
   `requestEdit`). While set, the browser's context menu is suppressed on nodes only; bare canvas keeps it and does not
@@ -32,6 +33,8 @@ While 0.x, a minor version may change the API.
   added), the dragged node moves with it instead of staying at its old scene point.
 - Every node shows its hover "+" on both sides (before: only the root; other nodes had one on their tree side, which
   pointed into the map after the branch was dragged across the root). Both add a child.
+- The inline label editor lets go of the focus as soon as it closes (Enter, Escape, focus loss), so the next key
+  press is the host's (e.g. an undo shortcut), not the hidden input's.
 
 ## 0.2.0
 

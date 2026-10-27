@@ -7,7 +7,7 @@ import { CanvasInteractions } from './interaction/canvasInteractions';
 import type { NodeClickEvent } from './interaction/nodeClickEvent';
 import type { NodeContextMenuEvent } from './interaction/nodeContextMenuEvent';
 import type { NodeRepositionEvent } from './interaction/repositionEvent';
-import type { NodeOffsets } from './layout/positionOverrides';
+import type { NodeOffsets, NodeOffsetsChangeCause } from './layout/positionOverrides';
 import type { MindmapData, NodeId } from './model/node';
 import { drawScene, type Viewport } from './render/canvasRenderer';
 import type { Scene } from './render/scene';
@@ -47,10 +47,10 @@ export interface MountOptions {
   readonly nodeOffsets?: NodeOffsets;
   /**
    * Every user-placed node, after each change the user makes (a drop on empty space, or a confirmed reparent, which
-   * clears the moved branch's positions). Save it as-is and pass it back as `nodeOffsets` to restore the layout.
-   * Not fired for `setNodeOffsets`.
+   * clears the moved branch's positions; `cause` says which). Save it as-is and pass it back as `nodeOffsets` to
+   * restore the layout. Not fired for `setNodeOffsets`.
    */
-  readonly onNodeOffsetsChange?: (offsets: NodeOffsets) => void;
+  readonly onNodeOffsetsChange?: (offsets: NodeOffsets, cause: NodeOffsetsChangeCause) => void;
   /**
    * A click on a node (press and release without a drag), with the modifier keys, e.g. to jump to what the node
    * stands for. Not fired for drags, pans or hover buttons. Fired for every click, so a double-click fires twice.
@@ -164,7 +164,7 @@ class CanvasMount implements MindmapHandle {
       cssFontFamily: (font) => this.cssFonts.familyFor(font),
       requestRepaint: () => this.scheduler.request(),
       onNodeReposition: (event) => options.onNodeReposition?.(event),
-      onNodeOffsetsChange: (offsets) => options.onNodeOffsetsChange?.(offsets),
+      onNodeOffsetsChange: (offsets, cause) => options.onNodeOffsetsChange?.(offsets, cause),
       onNodeClick: (event) => options.onNodeClick?.(event),
       ...(options.onNodeContextMenu === undefined ? {} : { onNodeContextMenu: options.onNodeContextMenu }),
       // Same path as a host `setConfig`, so an in-map change can never skip what applying settings involves.

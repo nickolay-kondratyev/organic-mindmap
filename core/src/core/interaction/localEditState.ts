@@ -8,6 +8,7 @@ import {
   subtreeMoveBy,
   withNodeDropped,
   withoutSubtree,
+  type NodeOffsetsChangeCause,
   type PositionOverrides,
 } from '../layout/positionOverrides';
 import { rememberLast } from '../memo/rememberLast';
@@ -56,7 +57,7 @@ export class LocalEditState {
   /** `onOverridesChange` hears every change the user causes (drops, a confirmed reparent), not `setOverrides`. */
   constructor(
     private readonly edits: EditSession,
-    private readonly onOverridesChange: (overrides: PositionOverrides) => void,
+    private readonly onOverridesChange: (overrides: PositionOverrides, cause: NodeOffsetsChangeCause) => void,
   ) {
     this.previousStatus = edits.status;
   }
@@ -119,7 +120,7 @@ export class LocalEditState {
     const parent = scene.tree.parentOf(nodeId);
     const parentAt = parent === null ? undefined : scene.placedPositions.get(parent.id);
     if (parentAt === undefined) return null;
-    this.changeOverrides(withNodeDropped(this.overrides, scene.tree, drop, offsetBetween(parentAt, drop.to)));
+    this.changeOverrides(withNodeDropped(this.overrides, scene.tree, drop, offsetBetween(parentAt, drop.to)), 'drop');
     return { nodeId, position: drop.to };
   }
 
@@ -130,14 +131,14 @@ export class LocalEditState {
     // A confirmed reparent lands at its new parent's layout spot, not at a position dragged under the old parent.
     if (previous.kind === 'pending' && previous.request.type === 'move' && status.kind === 'idle') {
       const kept = withoutSubtree(this.overrides, buildTree(this.edits.confirmedData), previous.request.nodeId);
-      if (kept.size !== this.overrides.size) this.changeOverrides(kept);
+      if (kept.size !== this.overrides.size) this.changeOverrides(kept, 'confirmedMove');
     }
     if (status.kind === 'idle') this.editorRequest = null;
     return status.kind === 'rejected' && status.request === this.editorRequest ? status.request : null;
   }
 
-  private changeOverrides(overrides: PositionOverrides): void {
+  private changeOverrides(overrides: PositionOverrides, cause: NodeOffsetsChangeCause): void {
     this.overrides = overrides;
-    this.onOverridesChange(overrides);
+    this.onOverridesChange(overrides, cause);
   }
 }
