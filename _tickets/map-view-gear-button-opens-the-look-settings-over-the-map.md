@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-27T16:01:27Z
 id: nid_g8wymric04axnhd7lcoox7tkl_e
 title: "Map view: gear button opens the look settings over the map"
-status: in_progress
+status: closed
 deps: []
 links: []
 created_iso: 2026-10-27T15:49:42Z
-status_updated_iso: 2026-10-27T15:49:42Z
+status_updated_iso: 2026-10-27T16:01:27Z
 pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-g8wymric
 type: feature
 priority: 1
