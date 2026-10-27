@@ -182,7 +182,7 @@ structural edit is only shown as done once the host has actually done it.
   Dropping onto itself or its own descendant is refused before any request is sent.
   The user confirms the drop first (Cancel leaves the map as before the drag); "Don't
   ask again" turns that off as a stored setting the user can turn back on.
-- I4. Add child (hover "+" button on the node's outer side; it stays shown while the
+- I4. Add child (hover "+" button on both sides of the node; it stays shown while the
   pointer travels from the node to it), rename (double-click to edit the label inline,
   in the real font). The map offers no delete button: deleting is destructive, so a
   host offers it through its own UI via the `delete` request (undo is the host's job,
