@@ -14,8 +14,7 @@ import {
 import { firstLinkTarget, type MindmapNote } from '../mindmapNote';
 import type { MapSettings } from '../settings/mapSettings';
 import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
-import { EditHistory } from './editHistory';
-import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type UndoResult } from './noteSession';
+import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type ReplayResult } from './noteSession';
 import { keyBelongsToTextEntry } from './textEntryFocus';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
 
@@ -52,9 +51,8 @@ export interface MindmapNoteViewDeps {
  * one `vault.process` against the text the map was drawn from, and the view never saves otherwise.
  */
 export class MindmapNoteView extends FileView {
+  /** The shown note's text, writes and undo/redo history; `close` drops all of it with the note. */
   private readonly session = new MindmapNoteSession();
-  /** Undo/redo steps of this view's writes to the note it shows now; dropped with the note. */
-  private readonly history = new EditHistory();
   private handle: MindmapHandle | null = null;
   private resizeObserver: ResizeObserver | null = null;
   /** The note the mounted map currently draws, to skip `setData` when a reload yields the same note. */
@@ -122,7 +120,6 @@ export class MindmapNoteView extends FileView {
   override async onUnloadFile(file: TFile): Promise<void> {
     // The same view (and session) shows the next file: writes still in flight for this one must not load into it.
     this.session.close();
-    this.history.clear();
     this.unmount();
     this.contentEl.empty();
     await super.onUnloadFile(file);
@@ -228,9 +225,8 @@ export class MindmapNoteView extends FileView {
   private async writeEdit(request: EditRequest): Promise<MindmapData> {
     const file = this.noteFile();
     try {
-      const { data, snapshot } = await this.session.applyEdit(request, file);
+      const data = await this.session.applyEdit(request, file);
       this.shownNote = this.session.note;
-      this.history.record(snapshot);
       if (request.type === 'delete') this.offerUndo();
       return data;
     } catch (error) {
@@ -241,16 +237,11 @@ export class MindmapNoteView extends FileView {
     }
   }
 
-  /**
-   * The library's `onNodeOffsetsChange`: the whole reported set becomes the note's layout block. The positions a
-   * confirmed move drops belong to the move's undo step (one person action, one Ctrl+Z); a drop is its own step.
-   */
+  /** The library's `onNodeOffsetsChange`: the whole reported set becomes the note's layout block (one undo step, or part of the move's). */
   private async savePositions(offsets: NodeOffsets, cause: NodeOffsetsChangeCause): Promise<void> {
     try {
-      const snapshot = await this.session.savePositions(offsets, this.noteFile());
+      await this.session.savePositions(offsets, cause, this.noteFile());
       this.shownNote = this.session.note;
-      if (cause === 'confirmedMove') this.history.recordInLastStep(snapshot);
-      else this.history.record(snapshot);
     } catch (error) {
       if (error instanceof NoteClosedError) return;
       // The map already shows the drop; show the file's state again (positions included) and say why.
@@ -295,57 +286,33 @@ export class MindmapNoteView extends FileView {
     return false;
   }
 
-  private async undo(): Promise<void> {
-    const step = this.history.takeUndo();
-    if (step === null) {
-      new Notice(NOTHING_TO_UNDO_MESSAGE);
-      return;
-    }
-    await this.replayStep({
-      write: (file) => this.session.undo(step, file),
-      landed: () => this.history.undone(step),
-      changedSinceMessage: UNDO_CHANGED_SINCE_MESSAGE,
-      failedPrefix: UNDO_FAILED_PREFIX,
+  private undo(): Promise<void> {
+    return this.replayStep({
+      write: (file) => this.session.undo(file),
+      messages: { nothing: NOTHING_TO_UNDO_MESSAGE, changedSince: UNDO_CHANGED_SINCE_MESSAGE, failedPrefix: UNDO_FAILED_PREFIX },
     });
   }
 
-  private async redo(): Promise<void> {
-    const step = this.history.takeRedo();
-    if (step === null) {
-      new Notice(NOTHING_TO_REDO_MESSAGE);
-      return;
-    }
-    await this.replayStep({
-      write: (file) => this.session.redo(step, file),
-      landed: () => this.history.redone(step),
-      changedSinceMessage: REDO_CHANGED_SINCE_MESSAGE,
-      failedPrefix: REDO_FAILED_PREFIX,
+  private redo(): Promise<void> {
+    return this.replayStep({
+      write: (file) => this.session.redo(file),
+      messages: { nothing: NOTHING_TO_REDO_MESSAGE, changedSince: REDO_CHANGED_SINCE_MESSAGE, failedPrefix: REDO_FAILED_PREFIX },
     });
   }
 
-  /**
-   * One undo or redo write: shows the file as written; moves the step to the other stack when it landed, else drops
-   * the whole history (every step builds on the text the previous one left) and says why.
-   */
+  /** One undo or redo through the session's queue: shows the file as written and says why when nothing was put back. */
   private async replayStep(step: {
-    write: (file: NoteTextFile) => Promise<UndoResult>;
-    landed: () => void;
-    changedSinceMessage: string;
-    failedPrefix: string;
+    write: (file: NoteTextFile) => Promise<ReplayResult>;
+    messages: { nothing: string; changedSince: string; failedPrefix: string };
   }): Promise<void> {
     try {
       const result = await step.write(this.noteFile());
       this.render();
-      if (result === 'restored') {
-        step.landed();
-      } else {
-        this.history.clear();
-        new Notice(step.changedSinceMessage);
-      }
+      if (result !== 'restored') new Notice(step.messages[result]);
     } catch (error) {
       if (error instanceof NoteClosedError) return;
       // E.g. the file could not be written: without this the key press would fail silently.
-      new Notice(`${step.failedPrefix} ${errorMessage(error)}`);
+      new Notice(`${step.messages.failedPrefix} ${errorMessage(error)}`);
     }
   }
 

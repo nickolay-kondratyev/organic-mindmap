@@ -399,12 +399,9 @@ test.describe('GIVEN a child added on the map', () => {
     await harness.openFile(UNDO_MAP_PATH);
     await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
     await addChildViaPlus('root', UNDONE_CHILD_TEXT);
-    // The map shows the child only once the view has the written note (and so the undo step); the file alone may
-    // already hold the text while the view's write is still resolving.
+    // The map shows the child once the view has the written note; the undo keys may come at any time after the add
+    // (an undo queues behind the add's write), so this wait is only for the map state the later test reads.
     await expect.poll(async () => (await activeMapData())?.map((node) => node.text)).toContain(UNDONE_CHILD_TEXT);
-    // Chromium drops focus from the hidden editor input only at the next frame; until then Ctrl+Z is the input's.
-    // (The hidden input is out of the accessibility tree, so this cannot go through a role locator.)
-    await page.waitForFunction(() => !(document.activeElement instanceof HTMLInputElement));
   });
 
   test('WHEN Ctrl+Z is pressed THEN the file text is back to what it was before the add', async () => {

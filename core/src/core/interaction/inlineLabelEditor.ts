@@ -68,10 +68,14 @@ export class InlineLabelEditor {
     input.style.borderRadius = `${height / 2}px`;
   }
 
-  /** Ends the session without committing or cancelling. */
+  /** Ends the session without committing or cancelling, and lets go of the focus. */
   close(): void {
     this.session = null;
-    if (this.input !== null) this.input.style.display = 'none';
+    if (this.input === null) return;
+    // Chromium blurs a hidden input only at the next frame; until then keys (e.g. a host's Ctrl+Z) would be the
+    // input's. Blurring with the session already null means the blur listener commits nothing.
+    this.input.blur();
+    this.input.style.display = 'none';
   }
 
   dispose(): void {

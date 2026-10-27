@@ -1,5 +1,6 @@
-import type { EditRequest, MindmapData, NodeOffsets } from 'organic-mindmap';
+import type { EditRequest, MindmapData, NodeOffsets, NodeOffsetsChangeCause } from 'organic-mindmap';
 import { MindmapNote, readMindmapNote, type NoteReadResult, type NoteWriteResult } from '../mindmapNote';
+import { EditHistory, type WriteSnapshot } from './editHistory';
 
 /** The one thing the session needs from the note's file: an atomic read-modify-write (Obsidian `vault.process`). */
 export interface NoteTextFile {
@@ -28,24 +29,16 @@ export class NoteClosedError extends Error {
   }
 }
 
-/** The note text right before and right after one write, to undo exactly that write. */
-export interface WriteSnapshot {
-  readonly before: string;
-  readonly after: string;
-}
+/**
+ * `changedSince`: the file no longer holds the text the step left (the note changed outside the map), so the step
+ * would drop the newer change; the whole history is gone then. `nothing`: no step to put back.
+ */
+export type ReplayResult = 'restored' | 'changedSince' | 'nothing';
 
-/** A confirmed map edit: what the map shows now, and how to undo it. */
-export interface WrittenEdit {
-  readonly data: MindmapData;
-  readonly snapshot: WriteSnapshot;
-}
-
-/** `changedSince`: the file no longer holds the text the write left, so undo would drop the newer change. */
-export type UndoResult = 'restored' | 'changedSince';
-
-/** One opened note's read: the text the map was drawn from and what it reads as. */
+/** One opened note's read: the text the map was drawn from, what it reads as, and the map's undo/redo steps on it. */
 class OpenNote {
   state: SessionState = { kind: 'empty' };
+  readonly history = new EditHistory();
   private text: string | null = null;
 
   get note(): MindmapNote | null {
@@ -71,20 +64,16 @@ class OpenNote {
   }
 }
 
-/** A confirmed write: the note as written, and how to undo it. */
-interface WrittenNote {
-  readonly note: MindmapNote;
-  readonly snapshot: WriteSnapshot;
-}
-
 /**
  * One open map's note: the text it was drawn from and every write back to the file. Each map view owns one, so
  * two open maps share nothing. Writes go through `NoteTextFile.process` and apply only when the file still holds
  * the text the map was drawn from (generated block ids only resolve within that read; a stale write could also
  * drop what someone typed meanwhile); otherwise the session reloads from the file's text and refuses the write.
  * Writes run one after another, so each one checks against the text the previous one left (a drop can land while
- * an edit is still being written). `close` ends the note: writes queued before it still finish against that note,
- * but never change the session again.
+ * an edit is still being written). Undo/redo history (`EditHistory`) lives with the open note and is only touched
+ * inside that queue: a step is recorded when its write lands and taken when the undo's turn comes, so an undo
+ * pressed while an edit is still being written undoes that edit. `close` ends the note (history included): writes
+ * queued before it still finish against that note, but never change the session again.
  */
 export class MindmapNoteSession {
   private open = new OpenNote();
@@ -116,46 +105,88 @@ export class MindmapNoteSession {
   }
 
   /**
-   * Host side of the library's edit protocol: resolves with the data of the note as written (and the snapshot to
-   * undo it), rejects with a plain-language reason (the format's refusal, or {@link STALE_EDIT_REASON}). After a
-   * stale refusal the session already holds the file's newer text; callers show `state` again.
+   * Host side of the library's edit protocol: resolves with the data of the note as written (one undo step), rejects
+   * with a plain-language reason (the format's refusal, or {@link STALE_EDIT_REASON}). After a stale refusal the
+   * session already holds the file's newer text; callers show `state` again.
    */
-  async applyEdit(request: EditRequest, file: NoteTextFile): Promise<WrittenEdit> {
-    const { note, snapshot } = await this.write((current) => current.applyEdit(request), file, STALE_EDIT_REASON);
-    return { data: note.toMindmapData(), snapshot };
+  async applyEdit(request: EditRequest, file: NoteTextFile): Promise<MindmapData> {
+    const note = await this.write((current) => current.applyEdit(request), file, STALE_EDIT_REASON, (history, snapshot) =>
+      history.record(snapshot),
+    );
+    return note.toMindmapData();
   }
 
   /**
    * Saves `offsets` as the note's whole layout (what the map reports after a drop); ids not in the note are
-   * dropped. Resolves with the snapshot to undo it (`before === after` when the note already held these positions).
-   * Rejects with {@link STALE_POSITIONS_REASON} when the note changed under the map (then like `applyEdit`).
+   * dropped. A `drop` is its own undo step; the positions a `confirmedMove` drops fold into the move's step (one
+   * person action, one Ctrl+Z). Rejects with {@link STALE_POSITIONS_REASON} when the note changed under the map
+   * (then like `applyEdit`).
    */
-  async savePositions(offsets: NodeOffsets, file: NoteTextFile): Promise<WriteSnapshot> {
-    const { snapshot } = await this.write((note) => ({ kind: 'written', text: note.setPositions(offsets) }), file, STALE_POSITIONS_REASON);
-    return snapshot;
+  async savePositions(offsets: NodeOffsets, cause: NodeOffsetsChangeCause, file: NoteTextFile): Promise<void> {
+    await this.write(
+      (note) => ({ kind: 'written', text: note.setPositions(offsets) }),
+      file,
+      STALE_POSITIONS_REASON,
+      (history, snapshot) => (cause === 'confirmedMove' ? history.recordInLastStep(snapshot) : history.record(snapshot)),
+    );
   }
 
-  /** Puts back the text from before `snapshot`'s write, only while the file still holds the text it left. */
-  undo(snapshot: WriteSnapshot, file: NoteTextFile): Promise<UndoResult> {
-    return this.swapText(snapshot.after, snapshot.before, file);
-  }
-
-  /** Puts back the text `snapshot`'s write left, only while the file still holds the text from before it (an undone step). */
-  redo(snapshot: WriteSnapshot, file: NoteTextFile): Promise<UndoResult> {
-    return this.swapText(snapshot.before, snapshot.after, file);
-  }
-
-  /** Replaces `expected` with `replacement` in the file, only while the file holds exactly `expected`. */
-  private swapText(expected: string, replacement: string, file: NoteTextFile): Promise<UndoResult> {
-    return this.enqueue(async (open) => {
-      const text = await file.process((fileText) => (fileText === expected ? replacement : fileText));
-      open.load(text);
-      return text === replacement ? 'restored' : 'changedSince';
+  /** Puts back the text from before the latest step, only while the file still holds the text that step left. */
+  undo(file: NoteTextFile): Promise<ReplayResult> {
+    return this.replay(file, {
+      take: (history) => history.takeUndo(),
+      textOf: (step) => ({ expected: step.after, replacement: step.before }),
+      landed: (history, step) => history.undone(step),
     });
   }
 
-  /** One stale-checked `process`; resolves with the note as written, else rejects with the reason. */
-  private write(change: (note: MindmapNote) => NoteWriteResult, file: NoteTextFile, staleReason: string): Promise<WrittenNote> {
+  /** Puts back the text the latest undone step left, only while the file still holds the text from before it. */
+  redo(file: NoteTextFile): Promise<ReplayResult> {
+    return this.replay(file, {
+      take: (history) => history.takeRedo(),
+      textOf: (step) => ({ expected: step.before, replacement: step.after }),
+      landed: (history, step) => history.redone(step),
+    });
+  }
+
+  /**
+   * One undo or redo, queued like a write: takes the step when its turn comes (so every earlier write is recorded),
+   * swaps its text only while the file holds exactly the expected one, else drops the history (every step builds on
+   * the text the previous one left).
+   */
+  private replay(
+    file: NoteTextFile,
+    direction: {
+      take: (history: EditHistory) => WriteSnapshot | null;
+      textOf: (step: WriteSnapshot) => { expected: string; replacement: string };
+      landed: (history: EditHistory, step: WriteSnapshot) => void;
+    },
+  ): Promise<ReplayResult> {
+    return this.enqueue(async (open) => {
+      const step = direction.take(open.history);
+      if (step === null) return 'nothing';
+      const { expected, replacement } = direction.textOf(step);
+      const text = await file.process((fileText) => (fileText === expected ? replacement : fileText));
+      open.load(text);
+      if (text !== replacement) {
+        open.history.clear();
+        return 'changedSince';
+      }
+      direction.landed(open.history, step);
+      return 'restored';
+    });
+  }
+
+  /**
+   * One stale-checked `process`; resolves with the note as written (after `record` put it in the history), else
+   * rejects with the reason. A stale write means the note changed outside the map: the history is dropped.
+   */
+  private write(
+    change: (note: MindmapNote) => NoteWriteResult,
+    file: NoteTextFile,
+    staleReason: string,
+    record: (history: EditHistory, snapshot: WriteSnapshot) => void,
+  ): Promise<MindmapNote> {
     return this.enqueue(async (open) => {
       const note = open.note;
       if (note === null) throw new Error('The map has no readable note to change');
@@ -175,11 +206,13 @@ export class MindmapNoteSession {
       switch (seen.outcome.kind) {
         case 'written':
           open.load(seen.outcome.text);
-          return { note: open.readNoteAfterWrite(), snapshot: { before: note.text, after: seen.outcome.text } };
+          record(open.history, { before: note.text, after: seen.outcome.text });
+          return open.readNoteAfterWrite();
         case 'refused':
           throw new Error(seen.outcome.reason);
         case 'stale':
           open.load(seen.outcome.text);
+          open.history.clear();
           throw new Error(staleReason);
       }
     });

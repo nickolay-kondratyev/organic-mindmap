@@ -1,5 +1,4 @@
-import { EditHistory } from './editHistory';
-import type { WriteSnapshot } from './noteSession';
+import { EditHistory, type WriteSnapshot } from './editHistory';
 
 const TEXT_0 = 'v0';
 const TEXT_1 = 'v1';

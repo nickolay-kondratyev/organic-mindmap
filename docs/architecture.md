@@ -278,13 +278,15 @@ page and loads none of the runner code or CSS.
   change from outside the map also resets the map's offsets to the note's. Delete: `onNodeContextMenu` opens an
   Obsidian `Menu` whose "Delete" calls `requestEdit` (the library refuses the root up front; the view shows the
   reason as a `Notice`); a confirmed delete shows a `Notice` with "Undo" (the same undo as Ctrl+Z). Undo/redo
-  (`editHistory.ts`, pure): the view's scope (`new Scope(app.scope)`, active only while the view is the active one)
-  binds Mod+Z / Mod+Shift+Z; every confirmed write's `WriteSnapshot` (before/after note text) is one step on
-  `EditHistory`, and the positions write the library reports with `cause: 'confirmedMove'` folds into the move's
-  step (`recordInLastStep`), so one person action is one Ctrl+Z; a write that left the text unchanged is no step.
-  `MindmapNoteSession.undo`/`redo` swap the step's texts through the write queue only while the file holds the text
-  the step left; otherwise the view clears the history (every later step builds on that text) and says so in a
-  `Notice`. While a text field or dialog has focus (`textEntryFocus.ts`), the keys are left to it (native undo). WHY-NOT
+  (`editHistory.ts`, pure, owned by the session's open note): the view's scope (`new Scope(app.scope)`, active only
+  while the view is the active one) binds Mod+Z / Mod+Shift+Z; every confirmed write's `WriteSnapshot` (before/after
+  note text) is one step on `EditHistory`, and the positions write the library reports with `cause: 'confirmedMove'`
+  folds into the move's step (`recordInLastStep`), so one person action is one Ctrl+Z; a write that left the text
+  unchanged is no step. `MindmapNoteSession.undo`/`redo` run in the write queue: they take the step there (so an
+  undo pressed while an add is still being written undoes that add) and swap its texts only while the file holds
+  the text the step left; otherwise (as after a stale write) the session clears the history, since every later step
+  builds on that text, and the view says so in a `Notice`. `close` drops the history with the note. While a text
+  field or dialog has focus (`textEntryFocus.ts`), the keys are left to it (native undo). WHY-NOT
   `TextFileView`: it saves its own text on its own schedule, which could overwrite a newer file. Each view owns its session and mount, so two open maps share nothing.
   Routing (`viewSwitch.ts`, pure decision + per-leaf `MarkdownChoices`; wired in `main.ts`): `WorkspaceLeaf.setViewState`
   is wrapped (the Kanban/Excalidraw approach) so a `markdown` request for a note whose text passes `isMindmapNote`

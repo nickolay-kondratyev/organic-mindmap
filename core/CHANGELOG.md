@@ -33,6 +33,8 @@ While 0.x, a minor version may change the API.
   added), the dragged node moves with it instead of staying at its old scene point.
 - Every node shows its hover "+" on both sides (before: only the root; other nodes had one on their tree side, which
   pointed into the map after the branch was dragged across the root). Both add a child.
+- The inline label editor lets go of the focus as soon as it closes (Enter, Escape, focus loss), so the next key
+  press is the host's (e.g. an undo shortcut), not the hidden input's.
 
 ## 0.2.0
 
