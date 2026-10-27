@@ -1,6 +1,7 @@
 /* Organic Mindmap plugin styles (shipped next to main.js). */
 
-.organic-mindmap-view {
+/* `.view-content` too: Obsidian's own `.view-content` padding (12px 12px 32px) beats a single class. */
+.view-content.organic-mindmap-view {
   position: relative;
   overflow: hidden;
   padding: 0;
