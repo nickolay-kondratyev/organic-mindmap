@@ -23,6 +23,13 @@ export interface NodeOffset {
 export type NodeOffsets = Readonly<Record<NodeId, NodeOffset>>;
 
 /**
+ * Why the user-placed nodes changed: `drop` is a node dropped on empty space; `confirmedMove` is the moved branch
+ * losing its positions after the host confirmed a reparent (the same person action as that edit, so a host with
+ * undo can fold the two into one step).
+ */
+export type NodeOffsetsChangeCause = 'drop' | 'confirmedMove';
+
+/**
  * Library-local form of `NodeOffsets`: a Map, so drop order holds for every id. They survive data updates (ids that
  * no longer exist are ignored) and are reported to the host as events, never written into host data. Iteration
  * order is drop order (kept by `withNodeDropped`).

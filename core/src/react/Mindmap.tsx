@@ -14,6 +14,7 @@ import {
   type NodeClickEvent,
   type NodeContextMenuEvent,
   type NodeOffsets,
+  type NodeOffsetsChangeCause,
   type NodeRepositionEvent,
   type PartialMindmapConfig,
 } from '../core/index';
@@ -40,7 +41,7 @@ export interface MindmapProps {
    */
   readonly nodeOffsets?: NodeOffsets;
   /** Every user-placed node after each user change (see `MountOptions.onNodeOffsetsChange`); save it as-is. */
-  readonly onNodeOffsetsChange?: (offsets: NodeOffsets) => void;
+  readonly onNodeOffsetsChange?: (offsets: NodeOffsets, cause: NodeOffsetsChangeCause) => void;
   /** A click on a node with its modifier keys (see `MountOptions.onNodeClick`); a double-click fires twice. */
   readonly onNodeClick?: (event: NodeClickEvent) => void;
   /**
@@ -143,7 +144,7 @@ export const Mindmap = forwardRef<MindmapApi, MindmapProps>(function Mindmap(
       onEditStatusChange: (status) => callbacksRef.current.onEditStatusChange?.(status),
       onViewChange: (view) => callbacksRef.current.onViewChange?.(view),
       onNodeReposition: (event) => callbacksRef.current.onNodeReposition?.(event),
-      onNodeOffsetsChange: (offsets) => callbacksRef.current.onNodeOffsetsChange?.(offsets),
+      onNodeOffsetsChange: (offsets, cause) => callbacksRef.current.onNodeOffsetsChange?.(offsets, cause),
       onNodeClick: (event) => callbacksRef.current.onNodeClick?.(event),
       ...(onNodeContextMenu === undefined
         ? {}

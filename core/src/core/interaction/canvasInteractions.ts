@@ -10,6 +10,7 @@ import {
   overridesFromNodeOffsets,
   subtreeMoveBy,
   type NodeOffsets,
+  type NodeOffsetsChangeCause,
 } from '../layout/positionOverrides';
 import type { NodeId, Point, Side } from '../model/node';
 import { buildTree, type MindmapTree } from '../model/tree';
@@ -47,7 +48,7 @@ export interface InteractionHost {
   requestRepaint(): void;
   onNodeReposition(event: NodeRepositionEvent): void;
   /** Every user-placed node after a change the user made (a drop, a confirmed reparent); see `setNodeOffsets`. */
-  onNodeOffsetsChange(offsets: NodeOffsets): void;
+  onNodeOffsetsChange(offsets: NodeOffsets, cause: NodeOffsetsChangeCause): void;
   onNodeClick(event: NodeClickEvent): void;
   /** Set means the host shows its own menu, so a right-click on a node suppresses the browser's. */
   readonly onNodeContextMenu?: (event: NodeContextMenuEvent) => void;
@@ -112,7 +113,7 @@ export class CanvasInteractions {
     const { canvas } = host;
     this.editor = new InlineLabelEditor(canvas);
     this.notice = new NoticeBanner(canvas, () => host.edits.clearRejection());
-    this.local = new LocalEditState(host.edits, (overrides) => host.onNodeOffsetsChange(nodeOffsetsOf(overrides)));
+    this.local = new LocalEditState(host.edits, (overrides, cause) => host.onNodeOffsetsChange(nodeOffsetsOf(overrides), cause));
     this.reparentDialog = new ReparentDialog(canvas);
     this.reparent = new ReparentConfirmation({
       config: () => host.config(),
