@@ -36,6 +36,8 @@ While 0.x, a minor version may change the API.
   keeps a "+" on both sides.
 - The inline label editor lets go of the focus as soon as it closes (Enter, Escape, focus loss), so the next key
   press is the host's (e.g. an undo shortcut), not the hidden input's.
+- The default map background (`theme.color.background`) is dark green `#2e423a` (RGB 46, 66, 58) instead of
+  near-black navy `#0b1020`. A host that sets its own background keeps it.
 
 ## 0.2.0
 

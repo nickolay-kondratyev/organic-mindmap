@@ -29,10 +29,10 @@ export interface ThemeConfig {
   readonly color: ThemeColorConfig;
 }
 
-/** Warm, saturated-but-soft hues on near-black navy (spec §8 "Colors"). */
+/** Warm, saturated-but-soft hues on a dark green background (spec §8 "Colors"). */
 export const DEFAULT_THEME: ThemeConfig = {
   color: {
-    background: '#0b1020',
+    background: '#2e423a',
     root: { fill: '#2f3542', outline: '#57606f', text: '#ffffff' },
     nodeText: '#ffffff',
     branchText: '#ffffff',

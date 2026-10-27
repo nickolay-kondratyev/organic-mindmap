@@ -247,7 +247,9 @@ page and loads none of the runner code or CSS.
 - Acceptance screenshot (spec Q3): `e2e/reference-view.spec.ts` shoots `demo/reference.html`, a canvas-only
   page (zero config, reference data, no React) at a fixed 1400x900 / DPR 1 viewport; the baseline lives in
   `e2e/reference-view.spec.ts-snapshots/`. It is the only look assertion in the repo; re-baseline (from `core/`) with
-  `npx playwright test e2e/reference-view.spec.ts --update-snapshots` after an intended visual change.
+  `npx playwright test e2e/reference-view.spec.ts --update-snapshots=all` after an intended visual change (`=all`
+  because the default `changed` mode keeps the old file when the diff stays under Playwright's per-pixel
+  `threshold` of 0.2, which a dark-to-dark background change does).
 - Vendored Kalam (`assets/fonts/kalam/`, SIL OFL) is the same file as the default Fontsource URL; unit tests
   read it via `test-support/vendoredKalam.ts`, so no test hits the network.
 
