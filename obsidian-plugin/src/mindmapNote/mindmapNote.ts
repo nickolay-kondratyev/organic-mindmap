@@ -3,6 +3,7 @@ import {
   type EditRequest,
   type MindmapData,
   type NodeId,
+  type NodeOffset,
   type NodeOffsets,
 } from 'organic-mindmap';
 import { claimUniqueBlockId, type BlockIdSource } from './blockId';
@@ -102,8 +103,12 @@ export class MindmapNote {
 
   /**
    * The note text after `request`. `add` and `move` place the item as the last child of its parent; `side` is
-   * ignored (the auto layout picks it). Refuses what the library refuses (unknown node, dropping into the own
-   * branch, deleting the root) with the library's wording.
+   * ignored (the auto layout picks it). `move` and `delete` also drop the branch's saved offsets from the layout
+   * block: a deleted branch has nothing to place, and a moved one's offsets were measured from the old parent (the
+   * library drops them from the map too, see `MountOptions.onNodeOffsetsChange`). Doing it in the same write keeps
+   * the note consistent on its own and lets Undo restore the offsets with the branch.
+   * Refuses what the library refuses (unknown node, dropping into the own branch, deleting the root) with the
+   * library's wording.
    */
   applyEdit(request: EditRequest): NoteWriteResult {
     const problem = findEditProblem(this.data, request);
@@ -118,9 +123,11 @@ export class MindmapNote {
         break;
       case 'move':
         this.move(lines, request.nodeId, request.newParentId);
+        this.dropBranchPositions(lines, request.nodeId);
         break;
       case 'delete':
         this.delete(lines, request.nodeId);
+        this.dropBranchPositions(lines, request.nodeId);
         break;
     }
     return { kind: 'written', text: lines.toText() };
@@ -134,14 +141,39 @@ export class MindmapNote {
   setPositions(offsets: NodeOffsets): string {
     const known = new Map(Object.entries(offsets).filter(([id]) => this.items.has(id)));
     const lines = this.linesWithAllBlockIds();
+    this.writeLayout(lines, known);
+    return lines.toText();
+  }
+
+  /** Rewrites the layout block with `offsets`, creating it when missing and there is something to save. */
+  private writeLayout(lines: NoteLines, offsets: ReadonlyMap<NodeId, NodeOffset>): void {
     const layout = findLayoutBlock(lines.contents(), this.bodyStart);
     if (layout === null) {
-      if (known.size > 0) this.insertLayoutBlock(lines, formatLayoutJsonLines(known));
+      if (offsets.size > 0) this.insertLayoutBlock(lines, formatLayoutJsonLines(offsets));
     } else {
       lines.remove(layout.openLine + 1, layout.closeLine - 1);
-      lines.insertAfter(layout.openLine, formatLayoutJsonLines(known));
+      lines.insertAfter(layout.openLine, formatLayoutJsonLines(offsets));
     }
-    return lines.toText();
+  }
+
+  /**
+   * Removes the saved offsets of `nodeId` and its descendants; leaves the layout block untouched when none is saved.
+   * Runs after the list edit: the block is found again in the edited lines, so shifted line numbers do not matter.
+   */
+  private dropBranchPositions(lines: NoteLines, nodeId: NodeId): void {
+    const branch = this.branchIds(nodeId);
+    const saved = Object.entries(this.positions);
+    if (!saved.some(([id]) => branch.has(id))) return;
+    this.writeLayout(lines, new Map(saved.filter(([id]) => !branch.has(id))));
+  }
+
+  /** `nodeId` and every item below it. Note order lists each parent before its children, so one pass suffices. */
+  private branchIds(nodeId: NodeId): Set<NodeId> {
+    const branch = new Set<NodeId>([nodeId]);
+    for (const node of this.nodes) {
+      if (node.parentId !== null && branch.has(node.parentId)) branch.add(node.id);
+    }
+    return branch;
   }
 
   private rename(lines: NoteLines, nodeId: NodeId, text: string): void {
