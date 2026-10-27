@@ -10,9 +10,8 @@ import {
   type NodeId,
   type NodeOffsets,
 } from 'organic-mindmap';
-import type { MindmapNote } from '../mindmapNote';
+import { firstLinkTarget, type MindmapNote } from '../mindmapNote';
 import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
-import { firstLinkTarget } from './linkTarget';
 import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type WriteSnapshot } from './noteSession';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
 

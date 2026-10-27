@@ -260,7 +260,9 @@ page and loads none of the runner code or CSS.
   `setPositions` writes the whole offsets set the map reports and drops ids not in the list; `move` and `delete`
   drop the branch's saved offsets in the same write, so Undo restores them with the branch), and
   `newMindmapNoteText`. It parses the text itself (WHY-NOT the metadata cache: it lags behind typing and is missing
-  in unit tests). Ids generated for items without a block id only exist in that read and reach the file with the
+  in unit tests). `toMindmapData` marks items with a `[[link]]` / `![[embed]]` as `link` by the same rule a click
+  uses to open one (`linkTarget.ts` `firstLinkTarget`), so looking like a link and opening one never disagree.
+  Ids generated for items without a block id only exist in that read and reach the file with the
   next write, so writes always go through the `MindmapNote` the map was drawn from.
 - `src/mapView/` is the map of one mindmap note. `MindmapNoteView` (a `FileView`, the only file importing
   `obsidian` besides `main.ts`) mounts `mountMindmap` on a canvas, re-reads the note on every `vault` `modify` of its
@@ -283,7 +285,7 @@ page and loads none of the runner code or CSS.
   file text, not by name or metadata cache, so there is one rule and no indexing lag. The wrap itself is
   `viewRouting.ts` over `monkey-around` (what Kanban uses): unloading restores the original only when ours is
   still the outermost wrapper, else ours stays as a pass-through, so another plugin's later wrap survives our unload.
-  Node clicks open the first `[[link]]` of the item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
+  Node clicks open the first `[[link]]` of the item (`mindmapNote/linkTarget.ts`) via `workspace.openLinkText`. Fonts:
   `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`,
   esbuild `binary` loader) behind the library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not
   bundled), so the plugin never fetches from a CDN and still imports only the library's public entry points.
