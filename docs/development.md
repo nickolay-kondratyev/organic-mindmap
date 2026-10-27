@@ -25,6 +25,15 @@ npm run test:e2e:obsidian       # plugin E2E in a REAL Obsidian (see below)
 `npm run dev:plugin` rebuilds `main.js` on every source change; reload the plugin in Obsidian to pick it up. Or
 `npm run setup:dev-vault` and open `obsidian-plugin/.dev-vault/` as a vault (the plugin is already installed there).
 
+## Install from source into your vault
+
+```bash
+npm install && npm run build    # builds main.js and styles.css at the repo root
+ln -s "$PWD" "<your vault>/.obsidian/plugins/organic-mindmap"
+```
+
+Then in Obsidian: Settings > Community plugins > enable "Organic Mindmap".
+
 ## Plugin E2E in a real Obsidian
 
 `npm run test:e2e:obsidian` builds the plugin, seeds `obsidian-plugin/.dev-vault/`, boots a real Obsidian (Electron)
