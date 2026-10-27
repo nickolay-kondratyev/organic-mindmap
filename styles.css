@@ -21,9 +21,9 @@
 
 /* The gear + look panel over the map (`MapSettingsPanel`). Theme variables only, so light and dark themes both work. */
 .organic-mindmap-settings-widget {
+  /* Spans the pane (inset), so the panel can fit its width and height to it; pointer-events below keep it see-through. */
   position: absolute;
-  top: var(--size-4-2);
-  right: var(--size-4-2);
+  inset: var(--size-4-2);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -55,9 +55,11 @@
 }
 
 .organic-mindmap-settings-panel {
-  /* Compact: roughly a dropdown plus its label; never taller than the map (scrolls instead). */
-  width: min(336px, calc(100vw - var(--size-4-8)));
-  max-height: calc(100% - var(--size-4-12));
+  /* Compact: roughly a dropdown plus its label; never wider or taller than the pane (a flex item with overflow
+     shrinks to the widget's height and scrolls). */
+  box-sizing: border-box;
+  width: 336px;
+  max-width: 100%;
   overflow-y: auto;
   padding: var(--size-4-3) var(--size-4-4);
   background-color: var(--background-primary);

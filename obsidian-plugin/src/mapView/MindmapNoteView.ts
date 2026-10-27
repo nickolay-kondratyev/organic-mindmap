@@ -189,7 +189,6 @@ export class MindmapNoteView extends FileView {
       onNodeClick: (event) => this.openNodeLink(event),
       onNodeContextMenu: (event) => this.showNodeMenu(event),
     });
-    // After the canvas (and so after the library's overlays, which go right after it): painted above the map.
     this.settingsPanel = new MapSettingsPanel(this.contentEl, this.deps.settings);
     this.resizeObserver = new ResizeObserver(() => this.fitBitmapToCanvas(canvas));
     this.resizeObserver.observe(canvas);

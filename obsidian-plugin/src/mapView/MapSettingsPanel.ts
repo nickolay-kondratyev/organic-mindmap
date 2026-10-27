@@ -35,7 +35,9 @@ export class MapSettingsPanel {
     private readonly settings: MapSettings,
   ) {
     const panelId = `organic-mindmap-settings-panel-${++nextPanelNumber}`;
-    this.widget = hostEl.createDiv({ cls: 'organic-mindmap-settings-widget' });
+    // Before the canvas: positioned, so still painted above it, but below the library's overlays (inline editor,
+    // notice, reparent dialog), which go right after the canvas. WHY: a rename or notice must never hide under the gear.
+    this.widget = hostEl.createDiv({ cls: 'organic-mindmap-settings-widget', prepend: true });
     this.gear = this.widget.createEl('button', {
       cls: ['clickable-icon', 'organic-mindmap-settings-gear'],
       attr: { 'aria-label': MAP_SETTINGS_LABEL, 'aria-expanded': 'false', 'aria-controls': panelId },
