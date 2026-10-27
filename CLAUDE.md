@@ -17,6 +17,7 @@ Run from the repo root; `typecheck`, `test` and `build` cover both packages, the
 - `npm install` — deps + Playwright Chromium (core's `prepare` script runs `core/scripts/install-browsers.mjs`, skipped when Chromium is present).
 - `npm run typecheck` · `npm test` (Vitest, both packages) · `npm run build` (library to `core/dist/`, plugin to `main.js` at the repo root) · `npm run e2e` (demo Playwright) · `npm run coverage` (unit coverage to `core/coverage/`, no gate) · `npm run bench` (`buildScene` timings per map size, report only).
 - Plugin: `npm run build:plugin` · `npm run dev:plugin` (watch, rebuilds `main.js`) · `npm run setup:dev-vault` (seeds `obsidian-plugin/.dev-vault/` with the built plugin) · `npm run test:e2e:obsidian` (real-Obsidian Playwright E2E; downloads a pinned Obsidian once into `.tmp/obsidian-e2e/bin/` (`OBSIDIAN_CACHE_DIR=~/.cache/obsidian-e2e` shares one download across worktrees), headless without a display, `OBSIDIAN_PATH` to use your own binary; not part of `npm test`).
+- Release the plugin: `./release.sh patch|minor|major` (wraps `scripts/release.sh`; bare `x.y.z` tag; CI publishes; see docs/development.md "Releasing the plugin").
 - `./run.sh` at the repo root (or `npm run dev`) — demo at `http://localhost:$PORT` (default 5173). `npm run build:demo && npm run preview` serves the built demo on `$E2E_PORT` (default 4173).
 
 ## Conventions

@@ -1,0 +1,19 @@
+// Runs as the root package.json "version" script (npm version, via scripts/release.sh): the root package.json
+// version is the plugin version, synced here into manifest.json and versions.json.
+import { readFileSync, writeFileSync } from 'fs';
+
+const targetVersion = process.env.npm_package_version;
+
+// read minAppVersion from manifest.json and bump version to target version
+const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+const { minAppVersion } = manifest;
+manifest.version = targetVersion;
+writeFileSync('manifest.json', JSON.stringify(manifest, null, 2) + '\n');
+
+// update versions.json with target version and minAppVersion from manifest.json
+// but only if the target version is not already in versions.json
+const versions = JSON.parse(readFileSync('versions.json', 'utf8'));
+if (!(targetVersion in versions)) {
+	versions[targetVersion] = minAppVersion;
+	writeFileSync('versions.json', JSON.stringify(versions, null, 2) + '\n');
+}

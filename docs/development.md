@@ -41,3 +41,25 @@ OBSIDIAN_PATH='/Applications/Obsidian.app/Contents/MacOS/Obsidian' npm run test:
 Env: `OBSIDIAN_PATH` (use this binary, skips the download), `OBSIDIAN_VERSION` (download another build for one run),
 `OBSIDIAN_CACHE_DIR` (share one download across checkouts), `OBSIDIAN_E2E_EXTRA_ARGS` (Chromium flags; defaults to
 headless flags when no display).
+
+## Releasing the plugin
+
+Plugin versions are bare `x.y.z` git tags (Obsidian forbids a `v` prefix); the root `package.json` version is the
+plugin version. The library in `core/` keeps its own `vX.Y.Z` tags (`core/CHANGELOG.md`), which do not trigger a
+plugin release.
+
+```bash
+./release.sh 0.1.0                       # first release: files already at 0.1.0, just tag
+./release.sh patch|minor|major           # later: bump, commit, tag
+gh run watch                             # the tag push runs .github/workflows/release.yml
+scripts/verify-release.sh <version>      # download the release, check attestation + SHA256SUMS
+```
+
+`./release.sh` (a thin wrapper over `scripts/release.sh`) needs a clean tree and refuses to tag unless typecheck,
+build, unit tests and the real-Obsidian E2E pass.
+`npm version` runs `version-bump.mjs`, which copies the version into `manifest.json` and adds it to `versions.json`
+with the current `minAppVersion`. The workflow builds `main.js`, checks the tag equals the `manifest.json` version, and
+publishes `main.js`, `manifest.json`, `styles.css` and `SHA256SUMS` with build-provenance attestation as the latest
+release. To redo a tag, delete its GitHub release first: the workflow fails if the release exists.
+
+One-time: GitHub repo Settings > Actions > General > Workflow permissions > "Read and write permissions".
