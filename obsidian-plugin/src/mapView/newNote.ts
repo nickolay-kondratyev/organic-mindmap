@@ -2,6 +2,8 @@
 export const MINDMAP_FILE_SUFFIX = '.organic-mindmap.md';
 /** Root item text of a newly created mindmap note. */
 export const NEW_NOTE_ROOT_TEXT = 'Central topic';
+/** The file explorer's folder right-click item that creates a mindmap note in that folder. */
+export const NEW_MINDMAP_FOLDER_MENU_TITLE = 'New organic mindmap';
 
 /**
  * `Mindmap 2026-10-26 23.05.14.organic-mindmap.md`, in local time. Dots instead of colons in the time: colons

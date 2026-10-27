@@ -20,7 +20,7 @@ import { keyBelongsToTextEntry } from './textEntryFocus';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
 
 export const OPEN_AS_MARKDOWN_LABEL = 'Open as Markdown';
-const VIEW_ICON = 'git-fork';
+export const VIEW_ICON = 'git-fork';
 const DELETED_MESSAGE = 'Deleted from the mindmap.';
 const NOTHING_TO_UNDO_MESSAGE = 'Nothing to undo on the map.';
 const NOTHING_TO_REDO_MESSAGE = 'Nothing to redo on the map.';

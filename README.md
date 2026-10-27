@@ -20,7 +20,8 @@ organic-mindmap: 1
 ```
 
 - **Create:** command "Create new mindmap" makes `Mindmap <timestamp>.organic-mindmap.md` in your default new-note
-  folder and opens it as a map. Or add the frontmatter flag to any note with one top-level list.
+  folder and opens it as a map; "New organic mindmap" in a folder's right-click menu in the file explorer makes it
+  in that folder. Or add the frontmatter flag to any note with one top-level list.
 - **Open:** a flagged note opens as a map wherever you open it (file explorer, links, quick switcher). The map's
   "..." menu has "Open as Markdown"; command "Toggle mindmap / Markdown view" switches either way.
 - **Edit on the map:** hover a node for "+" (add child), double-click to rename, drag onto another node to move it
