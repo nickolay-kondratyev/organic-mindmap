@@ -350,11 +350,10 @@ async function activeViewAndFile(): Promise<{ type: string | null; path: string 
   return { type: await activeViewType(), path: await activeFilePath() };
 }
 
-/** A plain left click on a painted node, the way a person opens its link. */
+/** A plain left click on a node once painted, the way a person opens its link. */
 async function clickNode(nodeId: string): Promise<void> {
-  await offsetFromParent(nodeId);
-  const node = await nodeCenterOnPage(nodeId);
-  await page.mouse.click(node.x, node.y);
+  const { box } = await nodeBoxOnPage(nodeId);
+  await page.mouse.click(box.center.x, box.center.y);
 }
 
 test.describe('GIVEN a map with link nodes to a plain note and to a mindmap note, open as a map', () => {
