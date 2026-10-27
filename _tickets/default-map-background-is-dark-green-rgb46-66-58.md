@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-27T16:03:38Z
 id: nid_un2phbuf1oisujs5jrngzfnni_e
 title: "Default map background is dark green rgb(46, 66, 58)"
-status: in_progress
+status: closed
 deps: []
 links: []
 created_iso: 2026-10-27T15:58:34Z
-status_updated_iso: 2026-10-27T15:58:34Z
+status_updated_iso: 2026-10-27T16:03:38Z
 pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-un2phbuf
 type: task
 priority: 1
