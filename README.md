@@ -39,7 +39,8 @@ organic-mindmap: 1
   tab). Since the mindmap is a normal note, Obsidian keeps its links updated when a linked note is renamed.
 - A note the plugin cannot read as a map says why and offers "Open as Markdown".
 - **Settings** (Settings > Organic Mindmap): branch colors (Warm, Vivid, Muted, Monochrome), node font and branch font
-  (Kalam, Caveat, Patrick Hand, Nunito), background color, and "Restore look defaults". Changes apply to every open
+  (Kalam, Caveat, Patrick Hand, Nunito), background color, and "Restore look defaults". The gear in a map's top-right
+  corner opens the same settings over the map, so you see each change as you make it. Changes apply to every open
   map at once and survive restarts.
 - No network: every font is bundled (SIL OFL; licenses next to the TTFs in `core/assets/fonts/` and
   `obsidian-plugin/assets/fonts/`).

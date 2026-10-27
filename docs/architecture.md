@@ -311,9 +311,13 @@ page and loads none of the runner code or CSS.
   and follows with `setConfig`. `palettePresets.ts` names a few palettes (default length, every fill clears
   `MIN_WHITE_TEXT_CONTRAST` for white labels; a stored palette matching none shows as "Custom" and is kept);
   `fontChoices.ts` maps bundled fonts to the pinned Fontsource URLs the config stores, and `withBundledFontsOnly`
-  swaps an unbundled stored URL for the default font at load. `MapSettingsTab` (imports `obsidian`) is thin: native
-  `Setting` dropdowns, a color picker and one reset scoped to what the tab shows. Presets and choices are plugin-side
-  on purpose: the library stays a config, not a catalogue.
+  swaps an unbundled stored URL for the default font at load. `lookSettingRows.ts` (imports `obsidian`) builds the
+  look rows (native `Setting` dropdowns, a color picker and one reset scoped to the look) into any container: the one
+  source for both surfaces that show them. `MapSettingsTab` renders them in Obsidian's settings; `mapView/MapSettingsPanel.ts`
+  renders them in a panel a gear in each map's top-right corner opens over the map (WHY-NOT a `Modal`: it would cover
+  the map a person is tuning), rebuilt on every open so it shows the shared values; its open/close rules (gear,
+  Escape, click outside, focus back to the gear) are pure in `settingsPanelDisclosure.ts`. Presets and choices are
+  plugin-side on purpose: the library stays a config, not a catalogue.
 - Obsidian E2E (`npm run test:e2e:obsidian`, `e2e/*.e2e.ts`): `scripts/run-e2e.sh` provisions a pinned Obsidian
   (`scripts/setup-obsidian-bin.sh`, Linux download into `.tmp/obsidian-e2e/bin/`, or `OBSIDIAN_PATH`), seeds
   `.dev-vault/` with the built plugin, then `e2e/obsidianHarness.ts` spawns Obsidian on a throwaway copy of the vault

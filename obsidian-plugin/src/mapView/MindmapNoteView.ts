@@ -14,6 +14,7 @@ import {
 import { firstLinkTarget, type MindmapNote } from '../mindmapNote';
 import type { MapSettings } from '../settings/mapSettings';
 import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
+import { MapSettingsPanel } from './MapSettingsPanel';
 import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type ReplayResult } from './noteSession';
 import { keyBelongsToTextEntry } from './textEntryFocus';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
@@ -55,6 +56,8 @@ export class MindmapNoteView extends FileView {
   private readonly session = new MindmapNoteSession();
   private handle: MindmapHandle | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  /** The gear + look panel over the map; only while a map is mounted (a problem screen has no map to tune). */
+  private settingsPanel: MapSettingsPanel | null = null;
   /** The note the mounted map currently draws, to skip `setData` when a reload yields the same note. */
   private shownNote: MindmapNote | null = null;
   /** The open "Undo" notice of the last delete; it only makes sense while this view shows that note. */
@@ -186,6 +189,7 @@ export class MindmapNoteView extends FileView {
       onNodeClick: (event) => this.openNodeLink(event),
       onNodeContextMenu: (event) => this.showNodeMenu(event),
     });
+    this.settingsPanel = new MapSettingsPanel(this.contentEl, this.deps.settings);
     this.resizeObserver = new ResizeObserver(() => this.fitBitmapToCanvas(canvas));
     this.resizeObserver.observe(canvas);
     this.fitBitmapToCanvas(canvas);
@@ -196,6 +200,8 @@ export class MindmapNoteView extends FileView {
     this.undoNotice = null;
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
+    this.settingsPanel?.destroy();
+    this.settingsPanel = null;
     this.handle?.destroy();
     this.handle = null;
     this.shownNote = null;
