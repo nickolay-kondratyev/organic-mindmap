@@ -6,35 +6,28 @@ note, so it stays readable, linkable and searchable like any other note.
 
 ![A mindmap in Obsidian: "Shakespeare" in the center with colored, curved branches to Vida, Poesia, Historia, Comedia and Tragedia](docs/images/mindmap-in-obsidian.png)
 
-**Status: in development, not yet in the Community plugins list.** Desktop only, Obsidian 1.12.7 or newer.
-
-## Features
+## Why you'll like it
 
 - **A map is a note.** The note's nested list is the tree. Edit it as a map or as Markdown; both stay in sync.
 - **Edit on the map.** Add, rename, move and delete nodes with the mouse; undo and redo with the usual keys.
 - **Your layout sticks.** Drag a node where you want it and it stays there after you reopen the note.
 - **Links work.** `[[Links]]` in a node open the linked note, and Obsidian keeps them updated when notes are renamed.
 - **Make it yours.** Branch colors, fonts and background color, changed live over the map.
-- **Offline.** No network access; every font is bundled.
+- **Private and offline.** No network access; every font is bundled.
 
 ## Install
 
-Until the plugin is in Community plugins, build it from source (needs [Node.js](https://nodejs.org) and `git`):
+In Obsidian: **Settings > Community plugins > Browse**, search for **Organic Mindmap**, click **Install**, then
+**Enable**. Or open it directly: [Organic Mindmap in Community plugins](https://obsidian.md/plugins?id=organic-mindmap).
 
-```bash
-git clone https://github.com/nickolay-kondratyev/organic-mindmap.git
-cd organic-mindmap
-npm install
-npm run build                 # builds main.js and styles.css at the repo root
-```
+Needs Obsidian 1.12.7 or newer, on desktop (Windows, macOS, Linux). Mobile is not supported.
 
-The repo root is the plugin folder (`main.js`, `manifest.json`, `styles.css`). Link it into your vault:
+## Quick start
 
-```bash
-ln -s "$PWD" "<your vault>/.obsidian/plugins/organic-mindmap"
-```
-
-Then in Obsidian: Settings > Community plugins > enable "Organic Mindmap".
+1. Open the command palette (Ctrl/Cmd+P) and run **Organic Mindmap: Create new mindmap**.
+2. Double-click **Central topic** and type your own.
+3. Hover a node and click **+** to add an idea under it.
+4. Drag nodes around until the map looks right. That's it: every change is saved to the note.
 
 ## Use
 
@@ -44,7 +37,7 @@ Then in Obsidian: Settings > Community plugins > enable "Organic Mindmap".
   new-note folder and opens it as a map.
 - File explorer: right-click a folder > **New organic mindmap** makes one in that folder.
 - Or turn an existing note into a map: add `organic-mindmap: 1` to its frontmatter. The note needs exactly one
-  top-level list item (the root).
+  top-level list item (the center of the map).
 
 ### What the note looks like
 
@@ -58,7 +51,7 @@ organic-mindmap: 1
 ```
 
 The nested list is the tree. The `^n7f3k` block ids are added for you and keep each node's identity. Dragged node
-positions are saved in a hidden `%%` comment block after the list.
+positions are saved in a hidden `%%` comment block after the list, so the note stays clean in reading view.
 
 ### Open
 
@@ -73,7 +66,7 @@ A mindmap note opens as a map wherever you open it (file explorer, links, quick 
 | Rename | Double-click the node |
 | Move under another node | Drag it onto that node |
 | Place it somewhere else | Drag it to empty space; the spot is saved |
-| Delete | Right-click > **Delete** (the notice that follows has **Undo**; the root cannot be deleted) |
+| Delete | Right-click > **Delete** (the notice that follows has **Undo**; the center node cannot be deleted) |
 | Undo / redo | Ctrl+Z / Ctrl+Shift+Z (Cmd on macOS) |
 | Open a link | Click a node with a `[[link]]` (Ctrl/Cmd-click: new tab) |
 
@@ -103,13 +96,13 @@ Changes apply to every open map at once and are kept across restarts.
 
 ## Privacy
 
-The plugin makes no network requests. All fonts are bundled (SIL Open Font License; license files sit next to the
-fonts in `core/assets/fonts/` and `obsidian-plugin/assets/fonts/`).
+The plugin makes no network requests. All fonts are bundled (SIL Open Font License).
 
-## For developers
+## Feedback
 
-- Build, test and repo layout: [docs/development.md](docs/development.md)
-- The plugin is built on the standalone mindmap library in [`core/`](core/README.md), which also runs outside Obsidian.
+Found a bug or have an idea? [Open an issue](https://github.com/nickolay-kondratyev/organic-mindmap/issues).
+
+Want to build from source or contribute? See [docs/development.md](docs/development.md).
 
 ## License
 
