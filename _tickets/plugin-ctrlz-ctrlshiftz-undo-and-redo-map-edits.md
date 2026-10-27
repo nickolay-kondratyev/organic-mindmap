@@ -1,11 +1,12 @@
 ---
 id: nid_x9jc2ml9mws9tn4l013zuc68r_e
 title: "Plugin: Ctrl+Z / Ctrl+Shift+Z undo and redo map edits"
-status: open
+status: in_progress
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:11:07Z
+status_updated_iso: 2026-10-27T15:16:38Z
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-x9jc2ml9
 type: feature
 priority: 1
 assignee: CC_WITH-nickolaykondratyev

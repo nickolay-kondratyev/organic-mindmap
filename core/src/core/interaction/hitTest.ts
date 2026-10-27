@@ -17,7 +17,7 @@ export const HANDLE_RADIUS = 10;
 export const HANDLE_GAP = 6;
 
 /**
- * Hover button of a node (spec I4): "+" on the outer side adds a child.
+ * Hover button of a node (spec I4): a "+" on either side of it adds a child.
  * WHY-NOT a delete "x": deleting in a note is destructive, so the map does not offer it (the `delete` edit request
  * stays in the protocol for hosts that offer it through their own UI).
  */
@@ -49,13 +49,16 @@ export function nodeBoxOf(scene: HitScene, nodeId: NodeId): NodeBox | null {
   return center === undefined || size === undefined ? null : { center, size };
 }
 
-/** Buttons shown while `nodeId` is hovered. The root has a "+" on both sides (its children pick a side). */
+/**
+ * Buttons shown while `nodeId` is hovered: a "+" on both sides of every node. Both add a child; only for the root
+ * does the side carry meaning (its children pick a side, see `addDraftRequest`).
+ * WHY-NOT one "+" on the node's outer side: the tree side does not follow a branch dragged across the root, so its
+ * "+" would point into the map.
+ */
 export function nodeHandles(scene: HitScene, nodeId: NodeId): readonly NodeHandle[] {
   const box = nodeBoxOf(scene, nodeId);
   if (box === null) return [];
-  const side = scene.tree.sideOf(nodeId);
-  if (side === null) return [addChildHandle(box, nodeId, 'left'), addChildHandle(box, nodeId, 'right')];
-  return [addChildHandle(box, nodeId, side)];
+  return [addChildHandle(box, nodeId, 'left'), addChildHandle(box, nodeId, 'right')];
 }
 
 /**
