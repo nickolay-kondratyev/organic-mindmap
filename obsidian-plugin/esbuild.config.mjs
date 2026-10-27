@@ -25,7 +25,7 @@ const context = await esbuild.context({
   sourcemap: watch ? 'inline' : false,
   treeShaking: true,
   alias: CORE_ALIAS,
-  // The bundled Kalam font (src/mapView/bundledFonts.ts): no CDN fetch from inside Obsidian.
+  // The bundled label fonts (src/mapView/bundledFonts.ts): no CDN fetch from inside Obsidian.
   loader: { '.ttf': 'binary' },
   external: [
     'obsidian',
