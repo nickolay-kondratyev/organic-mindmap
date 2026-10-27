@@ -1,15 +1,15 @@
 ---
+closed_iso: 2026-10-27T00:17:51Z
 id: nid_76v6o4a80srw0tqec4ljx2hqw_e
 title: "Plugin: the node '+' adds a child in real Obsidian (not only in the E2E path)"
-status: in_progress
+status: closed
 deps: []
 links: []
 created_iso: 2026-10-27T00:00:08Z
-status_updated_iso: 2026-10-27T00:00:56Z
+status_updated_iso: 2026-10-27T00:17:51Z
 type: task
 priority: 2
 assignee: CC_WITH-nickolaykondratyev
-pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-76v6o4a8
 tags: [mindmap-editing]
 profile: higher
 ---
