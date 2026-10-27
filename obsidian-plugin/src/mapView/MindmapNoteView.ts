@@ -160,9 +160,9 @@ export class MindmapNoteView extends FileView {
       onNodeClick: (event) => this.openNodeLink(event),
       onNodeContextMenu: (event) => this.showNodeMenu(event),
     });
-    this.resizeObserver = new ResizeObserver(() => this.fitCanvasToContent());
-    this.resizeObserver.observe(this.contentEl);
-    this.fitCanvasToContent();
+    this.resizeObserver = new ResizeObserver(() => this.fitBitmapToCanvas(canvas));
+    this.resizeObserver.observe(canvas);
+    this.fitBitmapToCanvas(canvas);
   }
 
   private unmount(): void {
@@ -175,9 +175,15 @@ export class MindmapNoteView extends FileView {
     this.shownNote = null;
   }
 
-  private fitCanvasToContent(): void {
+  /**
+   * WHY the canvas's own size, not `contentEl`'s: Obsidian pads `.view-content` (12px 12px 32px in 1.12), so the
+   * pane's `clientWidth/Height` is bigger than the canvas filling it. A bitmap sized to the pane gets scaled down
+   * into the canvas box, and everything drawn shifts up-left of where pointer events are hit-tested: the "+" a
+   * person saw was ~27px away from the one that reacts (ticket nid_76v6o4a80srw0tqec4ljx2hqw_e).
+   */
+  private fitBitmapToCanvas(canvas: HTMLCanvasElement): void {
     if (this.handle === null) return;
-    const { clientWidth, clientHeight } = this.contentEl;
+    const { clientWidth, clientHeight } = canvas;
     if (clientWidth === 0 || clientHeight === 0) return;
     this.handle.resize(clientWidth, clientHeight, window.devicePixelRatio);
   }
