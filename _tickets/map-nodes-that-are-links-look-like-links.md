@@ -6,6 +6,7 @@ deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
 status_updated_iso: 2026-10-27T15:12:36Z
+pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-zk9gr2bj
 type: feature
 priority: 1
 assignee: CC_WITH-nickolaykondratyev
