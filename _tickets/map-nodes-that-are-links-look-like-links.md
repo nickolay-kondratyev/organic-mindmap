@@ -1,11 +1,12 @@
 ---
+closed_iso: 2026-10-27T15:31:34Z
 id: nid_zk9gr2bj43l18yexsa0lsru28_e
 title: "Map: nodes that are [[links]] look like links"
-status: in_progress
+status: closed
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:12:36Z
+status_updated_iso: 2026-10-27T15:31:34Z
 pwd: /home/nickolaykondratyev/git_repos/nickolay-kondratyev_organic-mindmap/.worktree/t-zk9gr2bj
 type: feature
 priority: 1
