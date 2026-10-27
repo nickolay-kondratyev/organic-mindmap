@@ -1,9 +1,9 @@
-import { MarkdownView, Notice, Plugin, WorkspaceLeaf, type ViewState } from 'obsidian';
+import { MarkdownView, Notice, Plugin, TFolder, WorkspaceLeaf, type ViewState } from 'obsidian';
 import { REFERENCE_DATA, SettingsPersistence } from 'organic-mindmap';
 import { CREATE_MINDMAP_COMMAND, SHOW_STATUS_COMMAND, TOGGLE_MINDMAP_VIEW_COMMAND } from './commands';
 import { bundledFontFetcher } from './mapView/bundledFonts';
-import { MindmapNoteView } from './mapView/MindmapNoteView';
-import { newMindmapNoteFileName, newNotePath, NEW_NOTE_ROOT_TEXT } from './mapView/newNote';
+import { MindmapNoteView, VIEW_ICON } from './mapView/MindmapNoteView';
+import { newMindmapNoteFileName, newNotePath, NEW_MINDMAP_FOLDER_MENU_TITLE, NEW_NOTE_ROOT_TEXT } from './mapView/newNote';
 import { routeSetViewState } from './mapView/viewRouting';
 import { MapSettings } from './settings/mapSettings';
 import { MapSettingsTab } from './settings/MapSettingsTab';
@@ -42,11 +42,9 @@ export default class OrganicMindmapPlugin extends Plugin {
     this.addCommand({
       id: CREATE_MINDMAP_COMMAND.id,
       name: CREATE_MINDMAP_COMMAND.name,
-      callback: () =>
-        void this.createMindmapNote().catch((error: unknown) => {
-          new Notice(`Could not create the mindmap note: ${error instanceof Error ? error.message : String(error)}`);
-        }),
+      callback: () => this.createMindmapNoteIn(this.app.fileManager.getNewFileParent(this.app.workspace.getActiveFile()?.path ?? '')),
     });
+    this.addNewMindmapToFolderMenu();
     this.addCommand({
       id: TOGGLE_MINDMAP_VIEW_COMMAND.id,
       name: TOGGLE_MINDMAP_VIEW_COMMAND.name,
@@ -96,8 +94,32 @@ export default class OrganicMindmapPlugin extends Plugin {
     return type === viewState.type ? viewState : { ...viewState, type };
   }
 
-  private async createMindmapNote(): Promise<void> {
-    const folder = this.app.fileManager.getNewFileParent(this.app.workspace.getActiveFile()?.path ?? '');
+  /**
+   * Folders only, like Obsidian's own "New note" there (right-clicking the explorer's empty space gives the vault root
+   * folder). WHY-NOT on files too: `file-menu` also fills a note's tab "..." menu, where creating a map is out of place.
+   */
+  private addNewMindmapToFolderMenu(): void {
+    this.registerEvent(
+      this.app.workspace.on('file-menu', (menu, file) => {
+        if (!(file instanceof TFolder)) return;
+        menu.addItem((item) =>
+          item
+            .setTitle(NEW_MINDMAP_FOLDER_MENU_TITLE)
+            .setIcon(VIEW_ICON)
+            .onClick(() => this.createMindmapNoteIn(file)),
+        );
+      }),
+    );
+  }
+
+  /** Creates the note in `folder` and opens it as a map; a failure is shown as a `Notice`, never thrown. */
+  private createMindmapNoteIn(folder: TFolder): void {
+    void this.createAndOpenMindmapNote(folder).catch((error: unknown) => {
+      new Notice(`Could not create the mindmap note: ${error instanceof Error ? error.message : String(error)}`);
+    });
+  }
+
+  private async createAndOpenMindmapNote(folder: TFolder): Promise<void> {
     const path = newNotePath(folder.path, newMindmapNoteFileName(new Date()));
     const file = await this.app.vault.create(path, newMindmapNoteText(NEW_NOTE_ROOT_TEXT));
     await this.app.workspace.getLeaf(false).setViewState({ type: MINDMAP_VIEW_TYPE, state: { file: file.path }, active: true });

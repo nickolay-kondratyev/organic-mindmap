@@ -10,7 +10,7 @@ import {
 } from 'organic-mindmap';
 import { CREATE_MINDMAP_COMMAND } from '../src/commands';
 import { DELETE_LABEL, UNDO_LABEL } from '../src/mapView/deleteLabels';
-import { MINDMAP_FILE_SUFFIX, NEW_NOTE_ROOT_TEXT } from '../src/mapView/newNote';
+import { MINDMAP_FILE_SUFFIX, NEW_MINDMAP_FOLDER_MENU_TITLE, NEW_NOTE_ROOT_TEXT } from '../src/mapView/newNote';
 import { MARKDOWN_VIEW_TYPE, MINDMAP_VIEW_TYPE } from '../src/mapView/viewSwitch';
 import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
 
@@ -23,7 +23,8 @@ import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
  * deleting a node removes its child too (ticket nid_0v1xv98rj4u0fertn6uxlhbeg_e); click a link node -> a plain note opens
  * as Markdown, a mindmap note as a map, and going back returns to the map (ticket nid_fai5tp8qj4o6vpf0gmjj6h8rg_e);
  * add a child, Ctrl+Z -> the child is gone from the file, Ctrl+Shift+Z -> it is back
- * (ticket nid_x9jc2ml9mws9tn4l013zuc68r_e).
+ * (ticket nid_x9jc2ml9mws9tn4l013zuc68r_e); right-click a folder in the file explorer, "New organic mindmap" -> a
+ * mindmap note in that folder opens as a map.
  * Everything else is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
  * import `obsidian`.
  */
@@ -70,6 +71,11 @@ const MOVED_BRANCH_LINES = '\t- Cellar ^cellar\n\t\t- Pantry ^pantry\n\t\t\t- Sp
 const UNDO_MAP_PATH = 'Undo map.md';
 const UNDO_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Lab ^root', '\t- Bench ^bench', ''].join('\n');
 const UNDONE_CHILD_TEXT = 'Microscope';
+const EXPLORER_FOLDER = 'Projects';
+/** Fixtures are files; the folder comes with its seed note. */
+const EXPLORER_FOLDER_SEED_PATH = `${EXPLORER_FOLDER}/Seed.md`;
+/** Obsidian's built-in command that shows (and focuses) the file explorer. */
+const SHOW_FILE_EXPLORER_COMMAND_ID = 'file-explorer:open';
 /** Obsidian's Mod is Control on Linux, where the E2E runs. */
 const UNDO_SHORTCUT = 'Control+z';
 const REDO_SHORTCUT = 'Control+Shift+z';
@@ -99,6 +105,7 @@ test.beforeAll(async () => {
       [PLAIN_NOTE_PATH]: '# Plain note\n\nJust text.\n',
       [LINKED_MAP_PATH]: LINKED_MAP_TEXT,
       [UNDO_MAP_PATH]: UNDO_MAP_TEXT,
+      [EXPLORER_FOLDER_SEED_PATH]: '# Seed\n',
     },
   });
   page = harness.page;
@@ -242,6 +249,14 @@ test('WHEN a grandchild is added via the new child\'s "+" THEN the note text nes
   await addChildViaPlus(childId, GRANDCHILD_TEXT);
   await expect.poll(() => vaultFileText(mapPath)).toContain(`\t\t- ${GRANDCHILD_TEXT} ^`);
   await expect.poll(async () => (await activeMapData())?.find((node) => node.text === GRANDCHILD_TEXT)?.parentId).toBe(childId);
+});
+
+test('WHEN "New organic mindmap" is chosen from a folder\'s right-click menu in the file explorer THEN a mindmap note in that folder opens as a map', async () => {
+  await harness.runCommand(SHOW_FILE_EXPLORER_COMMAND_ID);
+  await page.locator(`.nav-folder-title[data-path="${EXPLORER_FOLDER}"]`).click({ button: 'right' });
+  await page.locator('.menu').getByText(NEW_MINDMAP_FOLDER_MENU_TITLE, { exact: true }).click();
+  await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
+  expect(await activeFilePath()).toMatch(new RegExp(`^${EXPLORER_FOLDER}/Mindmap .*${MINDMAP_FILE_SUFFIX.replaceAll('.', '\\.')}$`));
 });
 
 test.describe('GIVEN a mindmap note linking to another note, open as a map', () => {
