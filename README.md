@@ -30,7 +30,11 @@ organic-mindmap: 1
   parent, in a hidden `%%` layout block) and comes back when you reopen the note. Nodes you never dragged keep the
   automatic layout.
 - **Delete:** right-click a node > "Delete" removes it and its nested items from the note. The notice that follows
-  has "Undo", which puts the text back as long as the note has not changed since. The root cannot be deleted.
+  has "Undo". The root cannot be deleted.
+- **Undo / redo:** Ctrl+Z (Cmd+Z) undoes the last map change, Ctrl+Shift+Z (Cmd+Shift+Z) redoes it; one action
+  (add, rename, move, delete, drag) is one step. Steps apply as long as the note has not changed outside the map
+  (typing in a Markdown tab, sync); after that the map's history is gone and a notice says so. The history lives
+  with the open map: switching the view to another note or closing it drops it.
 - **Links:** an item that contains a `[[link]]` shows the link's text and opens it on click (Ctrl/Cmd-click: new
   tab). Since the mindmap is a normal note, Obsidian keeps its links updated when a linked note is renamed.
 - A note the plugin cannot read as a map says why and offers "Open as Markdown".
