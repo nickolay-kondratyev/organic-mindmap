@@ -20,6 +20,8 @@ While 0.x, a minor version may change the API.
   `requestEdit`). While set, the browser's context menu is suppressed on nodes only; bare canvas keeps it and does not
   fire the hook. `<Mindmap>` reads whether it is set once at mount.
 - Demo: right-click a node for a "Delete" menu that sends the delete through `requestEdit`.
+- `getConfig()` on the handle: the full `MindmapConfig` the map draws with (`config` merged over the defaults, plus
+  changes made inside the map), so a host can read back what `setConfig` and `onConfigChange` left it with.
 
 ### Changed
 - Renamed from `natural-mindmap` to `organic-mindmap`: import `organic-mindmap` and `organic-mindmap/react`. The

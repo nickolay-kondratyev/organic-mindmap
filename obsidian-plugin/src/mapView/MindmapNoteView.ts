@@ -11,6 +11,7 @@ import {
   type NodeOffsets,
 } from 'organic-mindmap';
 import { firstLinkTarget, type MindmapNote } from '../mindmapNote';
+import type { MapSettings } from '../settings/mapSettings';
 import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
 import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type WriteSnapshot } from './noteSession';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
@@ -25,6 +26,8 @@ const UNDO_NOTICE_MS = 10_000;
 
 export interface MindmapNoteViewDeps {
   readonly fontFetcher: FontFetcher;
+  /** The shared map config: read at mount, followed while mounted, told about changes made inside the map. */
+  readonly settings: MapSettings;
   /** Opens this view's note as Markdown in the same leaf (the plugin remembers the choice for the leaf). */
   readonly openAsMarkdown: (view: MindmapNoteView) => Promise<void>;
 }
@@ -87,6 +90,7 @@ export class MindmapNoteView extends FileView {
   override onload(): void {
     super.onload();
     this.contentEl.addClass('organic-mindmap-view');
+    this.register(this.deps.settings.onChange((config) => this.handle?.setConfig(config)));
     this.registerEvent(
       this.app.vault.on('modify', (file) => {
         if (this.file !== null && file.path === this.file.path) void this.reloadFromFile();
@@ -160,7 +164,9 @@ export class MindmapNoteView extends FileView {
     this.handle = mountMindmap(canvas, {
       data: note.toMindmapData(),
       nodeOffsets: note.positions,
+      config: this.deps.settings.config,
       fontFetcher: this.deps.fontFetcher,
+      onConfigChange: (config) => this.deps.settings.replace(config),
       onEditRequest: (request) => this.writeEdit(request),
       onNodeOffsetsChange: (offsets) => void this.savePositions(offsets),
       onNodeClick: (event) => this.openNodeLink(event),

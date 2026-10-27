@@ -1,21 +1,35 @@
 import { MarkdownView, Notice, Plugin, WorkspaceLeaf, type ViewState } from 'obsidian';
-import { REFERENCE_DATA } from 'organic-mindmap';
+import { REFERENCE_DATA, SettingsPersistence } from 'organic-mindmap';
 import { CREATE_MINDMAP_COMMAND, SHOW_STATUS_COMMAND, TOGGLE_MINDMAP_VIEW_COMMAND } from './commands';
 import { bundledFontFetcher } from './mapView/bundledFonts';
 import { MindmapNoteView } from './mapView/MindmapNoteView';
 import { newMindmapNoteFileName, newNotePath, NEW_NOTE_ROOT_TEXT } from './mapView/newNote';
 import { routeSetViewState } from './mapView/viewRouting';
+import { MapSettings } from './settings/mapSettings';
+import { MapSettingsTab } from './settings/MapSettingsTab';
 import { MarkdownChoices, MARKDOWN_VIEW_TYPE, MINDMAP_VIEW_TYPE, resolveViewType } from './mapView/viewSwitch';
 import { isMindmapNote, newMindmapNoteText } from './mindmapNote';
 import { statusMessage } from './statusMessage';
 
 export default class OrganicMindmapPlugin extends Plugin {
   private readonly markdownChoices = new MarkdownChoices<WorkspaceLeaf>();
+  /** The look (and in-map choices) of every map; stored in the plugin's `data.json` through the library's seam. */
+  private readonly settings = new MapSettings(
+    new SettingsPersistence({ load: () => this.loadData(), save: (config) => this.saveData(config) }),
+  );
 
-  override onload(): void {
+  override async onload(): Promise<void> {
+    // Before any view mounts: a map must start with the stored look, not the default and then a repaint.
+    await this.settings.load();
+    this.addSettingTab(new MapSettingsTab(this.app, this, this.settings));
     this.registerView(
       MINDMAP_VIEW_TYPE,
-      (leaf) => new MindmapNoteView(leaf, { fontFetcher: bundledFontFetcher, openAsMarkdown: (view) => this.openAsMarkdown(view) }),
+      (leaf) =>
+        new MindmapNoteView(leaf, {
+          fontFetcher: bundledFontFetcher,
+          settings: this.settings,
+          openAsMarkdown: (view) => this.openAsMarkdown(view),
+        }),
     );
     this.routeMindmapNotesToMap();
     this.addCommand({
