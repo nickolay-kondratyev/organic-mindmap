@@ -49,13 +49,14 @@ plugin version. The library in `core/` keeps its own `vX.Y.Z` tags (`core/CHANGE
 plugin release.
 
 ```bash
-scripts/release.sh 0.1.0                 # first release: files already at 0.1.0, just tag
-scripts/release.sh patch|minor|major     # later: bump, commit, tag
+./release.sh 0.1.0                       # first release: files already at 0.1.0, just tag
+./release.sh patch|minor|major           # later: bump, commit, tag
 gh run watch                             # the tag push runs .github/workflows/release.yml
 scripts/verify-release.sh <version>      # download the release, check attestation + SHA256SUMS
 ```
 
-`release.sh` needs a clean tree and refuses to tag unless typecheck, build, unit tests and the real-Obsidian E2E pass.
+`./release.sh` (a thin wrapper over `scripts/release.sh`) needs a clean tree and refuses to tag unless typecheck,
+build, unit tests and the real-Obsidian E2E pass.
 `npm version` runs `version-bump.mjs`, which copies the version into `manifest.json` and adds it to `versions.json`
 with the current `minAppVersion`. The workflow builds `main.js`, checks the tag equals the `manifest.json` version, and
 publishes `main.js`, `manifest.json`, `styles.css` and `SHA256SUMS` with build-provenance attestation as the latest
