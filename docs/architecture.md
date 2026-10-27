@@ -184,8 +184,8 @@ branches per pointer move, over a frozen base scene.
   confirmed `move` drops the moved subtree's overrides (reported too). Crossing the parent's centre line mirrors the
   subtree around the dragged node:
   `subtreeMoveTo` is the single flip rule used by the drag preview, the stored drop and `applyPositionOverrides`.
-  Hover buttons: "+" on the outer side (both sides for the root) opens the inline editor on a local draft child
-  (`DRAFT_NODE_ID`, not sent until Enter). While they show, the hovered node keeps its hover over its hover area
+  Hover buttons: a "+" on both sides of every node opens the inline editor on a local draft child
+  (`DRAFT_NODE_ID`, not sent until Enter; only the root's "+" carry `side`). While they show, the hovered node keeps its hover over its hover area
   (rectangle around its box and buttons, target `near-handles`), so the pointer can cross the gap to the "+";
   pressing there pans. No delete button: hosts send `delete` from their own UI. Double-click renames. Editors
   do not open while an edit is pending. `interaction.allowAdd` / `allowRename` off hide the "+" (`shownHandles`) and
