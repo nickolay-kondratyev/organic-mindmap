@@ -1,5 +1,6 @@
 {
   "name": "organic-mindmap-workspace",
+  "version": "0.1.0",
   "private": true,
   "description": "Workspace root: the library lives in core/, the Obsidian plugin in obsidian-plugin/. Root scripts delegate to them.",
   "license": "MIT",
@@ -22,6 +23,7 @@
     "bench": "npm run bench -w core --",
     "e2e": "npm run e2e -w core --",
     "setup:dev-vault": "npm run setup:dev-vault -w obsidian-plugin --",
-    "test:e2e:obsidian": "npm run test:e2e -w obsidian-plugin --"
+    "test:e2e:obsidian": "npm run test:e2e -w obsidian-plugin --",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
   }
 }
