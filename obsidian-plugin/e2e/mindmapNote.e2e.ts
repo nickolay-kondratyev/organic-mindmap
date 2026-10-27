@@ -121,17 +121,19 @@ async function vaultFileText(vaultPath: string): Promise<string | null> {
 }
 
 /**
- * A node's box in page coordinates and its outer side (the root: right; others: the side of the root they lie on),
- * waiting until the map has painted it.
+ * A node's box in page coordinates and the side its "+" is on (the root: right; others: the side of their parent
+ * they lie on), waiting until the map has painted it.
  */
 async function nodeBoxOnPage(nodeId: string): Promise<{ box: NodeBox; zoom: number; side: 'left' | 'right' }> {
   const handle = await page.waitForFunction((id) => {
     const map = (window as unknown as ObsidianWindow).app.workspace.activeLeaf?.view?.mapHandle;
-    const root = map?.getData().find((node: { parentId: string | null }) => node.parentId === null);
-    const box = root === undefined ? null : map.getNodeScreenBox(id);
-    const rootBox = root === undefined ? null : map.getNodeScreenBox(root.id);
-    if (box === null || rootBox === null) return null;
-    return { box, zoom: map.getView().zoom, side: box.center.x < rootBox.center.x ? 'left' : 'right' };
+    const node = map?.getData().find((candidate: { id: string }) => candidate.id === id);
+    const box = node === undefined ? null : map.getNodeScreenBox(id);
+    if (box === null) return null;
+    const parentBox = node.parentId === null ? null : map.getNodeScreenBox(node.parentId);
+    if (node.parentId !== null && parentBox === null) return null;
+    const side = parentBox !== null && box.center.x < parentBox.center.x ? 'left' : 'right';
+    return { box, zoom: map.getView().zoom, side };
   }, nodeId);
   const { box, zoom, side } = (await handle.jsonValue()) as { box: NodeBox; zoom: number; side: 'left' | 'right' };
   const canvas = await page.locator('.workspace-leaf.mod-active canvas').boundingBox();
@@ -202,7 +204,7 @@ test('WHEN a map is shown THEN its canvas bitmap is exactly its CSS box times th
 /** The way a person adds: hover the node, click its "+", type (the input took focus), Enter. */
 async function addChildViaPlus(nodeId: string, label: string): Promise<void> {
   const { box, zoom, side } = await nodeBoxOnPage(nodeId);
-  // Every node shows a "+" on both sides; take the outer one (the root: right).
+  // The root shows a "+" on both sides; take the right one. Other nodes show one on the side their children grow.
   const outward = side === 'left' ? -1 : 1;
   const plus = { x: box.center.x + outward * (box.size.width / 2 + (HANDLE_GAP + HANDLE_RADIUS) * zoom), y: box.center.y };
   await page.mouse.move(box.center.x, box.center.y);
