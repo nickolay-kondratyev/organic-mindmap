@@ -254,7 +254,8 @@ page and loads none of the runner code or CSS.
 - `src/mindmapNote/` is the mindmap note format (`next-steps-prior-to-obsidian.md` "Phase 1a"), text in, text out:
   `isMindmapNote`, `readMindmapNote` (note -> `MindmapNote`: nodes, saved parent offsets, or a plain-language
   problem), `MindmapNote.applyEdit` / `setPositions` (new note text, changing only the touched lines;
-  `setPositions` writes the whole offsets set the map reports and drops ids not in the list), and
+  `setPositions` writes the whole offsets set the map reports and drops ids not in the list; `move` and `delete`
+  drop the branch's saved offsets in the same write, so Undo restores them with the branch), and
   `newMindmapNoteText`. It parses the text itself (WHY-NOT the metadata cache: it lags behind typing and is missing
   in unit tests). Ids generated for items without a block id only exist in that read and reach the file with the
   next write, so writes always go through the `MindmapNote` the map was drawn from.

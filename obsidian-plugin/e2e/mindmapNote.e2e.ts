@@ -1,6 +1,13 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { HANDLE_GAP, HANDLE_RADIUS, LABEL_EDITOR_ACCESSIBLE_NAME, type MindmapData, type NodeBox } from 'organic-mindmap';
+import {
+  HANDLE_GAP,
+  HANDLE_RADIUS,
+  LABEL_EDITOR_ACCESSIBLE_NAME,
+  REPARENT_DIALOG_LABELS,
+  type MindmapData,
+  type NodeBox,
+} from 'organic-mindmap';
 import { CREATE_MINDMAP_COMMAND } from '../src/commands';
 import { DELETE_LABEL, UNDO_LABEL } from '../src/mapView/deleteLabels';
 import { MINDMAP_FILE_SUFFIX, NEW_NOTE_ROOT_TEXT } from '../src/mapView/newNote';
@@ -11,7 +18,9 @@ import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
  * Key journeys of the mindmap note (ticket nid_lmtjqrjec483zha67vaaeydez_e): create -> the map shows the root; add a
  * child on the map -> the file contains it; rename a linked note -> the mindmap's link is updated and the map shows
  * it; drag a node, reopen the note -> the node is where it was left (ticket nid_kjtran7bnslnah9gj2fjr69rx_e); delete a
- * node from its right-click menu, then "Undo" -> the note text is back (ticket nid_48incacjmuach0kymaasz36du_e).
+ * node from its right-click menu, then "Undo" -> the note text is back (ticket nid_48incacjmuach0kymaasz36du_e);
+ * drag a node with a child onto another node and confirm "Make child" -> the branch is nested there in the note, and
+ * deleting a node removes its child too (ticket nid_0v1xv98rj4u0fertn6uxlhbeg_e).
  * Everything else is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
  * import `obsidian`.
  */
@@ -27,10 +36,17 @@ const POSITIONS_MAP_PATH = 'Positions map.md';
 const POSITIONS_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Trip ^root', '\t- Packing ^pack', '\t- Route ^route', ''].join('\n');
 const DRAGGED_NODE_ID = 'pack';
 const DELETE_MAP_PATH = 'Delete map.md';
-const DELETE_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Garden ^root', '\t- Weeds ^weeds', '\t- Roses ^roses', ''].join('\n');
+const DELETE_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Garden ^root', '\t- Weeds ^weeds', '\t\t- Dandelion ^dandelion', '\t- Roses ^roses', ''].join('\n');
 const DELETED_NODE_ID = 'weeds';
 const FIRST_CHILD_TEXT = 'First idea';
 const GRANDCHILD_TEXT = 'A detail';
+const DELETED_CHILD_ID = 'dandelion';
+const MOVE_MAP_PATH = 'Move map.md';
+const MOVE_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Kitchen ^root', '\t- Pantry ^pantry', '\t\t- Spices ^spices', '\t- Cellar ^cellar', ''].join('\n');
+const MOVED_NODE_ID = 'pantry';
+const NEW_PARENT_ID = 'cellar';
+/** The moved branch as the note should hold it: last child of the new parent, every level re-indented, ids kept. */
+const MOVED_BRANCH_LINES = '\t- Cellar ^cellar\n\t\t- Pantry ^pantry\n\t\t\t- Spices ^spices\n';
 /** Screen px to drag the node straight down; far enough to be a clear move, into empty canvas. */
 const DRAG_DOWN_PX = 120;
 const DRAG_STEPS = 12;
@@ -52,6 +68,7 @@ test.beforeAll(async () => {
       [LINKING_MAP_PATH]: LINKING_MAP_TEXT,
       [POSITIONS_MAP_PATH]: POSITIONS_MAP_TEXT,
       [DELETE_MAP_PATH]: DELETE_MAP_TEXT,
+      [MOVE_MAP_PATH]: MOVE_MAP_TEXT,
     },
   });
   page = harness.page;
@@ -262,15 +279,47 @@ test.describe('GIVEN a mindmap note open as a map', () => {
     textBeforeDelete = await vaultFileText(DELETE_MAP_PATH);
   });
 
-  test('WHEN "Delete" is chosen from a node\'s right-click menu THEN the item is gone from the file', async () => {
+  test('WHEN "Delete" is chosen from a node\'s right-click menu THEN the item and its child are gone from the file', async () => {
     const node = await nodeCenterOnPage(DELETED_NODE_ID);
     await page.mouse.click(node.x, node.y, { button: 'right' });
     await page.locator('.menu').getByText(DELETE_LABEL, { exact: true }).click();
-    await expect.poll(() => vaultFileText(DELETE_MAP_PATH)).not.toContain(`^${DELETED_NODE_ID}`);
+    await expect
+      .poll(async () => {
+        const text = (await vaultFileText(DELETE_MAP_PATH)) ?? '';
+        return [DELETED_NODE_ID, DELETED_CHILD_ID].filter((id) => text.includes(`^${id}`));
+      })
+      .toEqual([]);
   });
 
   test('WHEN "Undo" is clicked on the delete notice THEN the file text equals the text before the delete', async () => {
     await page.locator('.notice').getByRole('button', { name: UNDO_LABEL }).click();
     await expect.poll(() => vaultFileText(DELETE_MAP_PATH)).toBe(textBeforeDelete);
+  });
+});
+
+test.describe('GIVEN a node with a child dragged onto another node', () => {
+  test.beforeAll(async () => {
+    await harness.openFile(MOVE_MAP_PATH);
+    await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
+    await offsetFromParent(MOVED_NODE_ID);
+    const from = await nodeCenterOnPage(MOVED_NODE_ID);
+    const onto = await nodeCenterOnPage(NEW_PARENT_ID);
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(onto.x, onto.y, { steps: DRAG_STEPS });
+    await page.mouse.up();
+  });
+
+  test('WHEN "Make child" is confirmed THEN the note holds the node and its child nested under the new parent', async () => {
+    await page
+      .locator('.workspace-leaf.mod-active')
+      .getByRole('dialog')
+      .getByRole('button', { name: REPARENT_DIALOG_LABELS.confirm })
+      .click();
+    await expect.poll(() => vaultFileText(MOVE_MAP_PATH)).toContain(MOVED_BRANCH_LINES);
+  });
+
+  test('WHEN the move is written THEN the map shows the node under its new parent', async () => {
+    await expect.poll(async () => (await activeMapData())?.find((node) => node.id === MOVED_NODE_ID)?.parentId).toBe(NEW_PARENT_ID);
   });
 });

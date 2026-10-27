@@ -124,6 +124,65 @@ describe('MindmapNote edits', () => {
     });
   });
 
+  describe('GIVEN two first-level branches, the first three levels deep, the second with a child', () => {
+    const note = readNote(
+      noteText('- root ^root', '\t- a ^a', '\t\t- a1 ^a1', '\t\t\t- a11 ^a11', '\t- b ^b', '\t\t- b1 ^b1'),
+    );
+
+    it('WHEN moving the first branch under the second THEN it lands after the new parent\'s child, every level re-indented', () => {
+      expect(written(note, { type: 'move', nodeId: 'a', newParentId: 'b' })).toBe(
+        noteText('- root ^root', '\t- b ^b', '\t\t- b1 ^b1', '\t\t- a ^a', '\t\t\t- a1 ^a1', '\t\t\t\t- a11 ^a11'),
+      );
+    });
+
+    it('WHEN moving the first branch two levels deeper THEN each level keeps its nesting below the new parent', () => {
+      expect(written(note, { type: 'move', nodeId: 'a', newParentId: 'b1' })).toBe(
+        noteText('- root ^root', '\t- b ^b', '\t\t- b1 ^b1', '\t\t\t- a ^a', '\t\t\t\t- a1 ^a1', '\t\t\t\t\t- a11 ^a11'),
+      );
+    });
+
+    it('WHEN moving the second branch under the first THEN it becomes the last child, after the nested branch', () => {
+      expect(written(note, { type: 'move', nodeId: 'b', newParentId: 'a' })).toBe(
+        noteText('- root ^root', '\t- a ^a', '\t\t- a1 ^a1', '\t\t\t- a11 ^a11', '\t\t- b ^b', '\t\t\t- b1 ^b1'),
+      );
+    });
+  });
+
+  describe('GIVEN a note with saved offsets for a branch, its child and another node', () => {
+    const layout = (json: string): string[] => ['', '%%', '```organic-mindmap-layout', json, '```', '%%', 'Footer.'];
+    const list = ['- root ^root', '\t- a ^a', '\t\t- a1 ^a1', '\t- b ^b', '\t- c ^c'];
+    const text = noteText(...list, ...layout('{"a": {"dx": 1, "dy": 2}, "a1": {"dx": 3, "dy": 4}, "b": {"dx": 5, "dy": 6}}'));
+    const note = readNote(text);
+
+    it('WHEN deleting the branch THEN the layout block no longer lists it or its child', () => {
+      // On the text: reading drops ids that are not in the list, so `positions` would hide a lingering entry.
+      expect(written(note, { type: 'delete', nodeId: 'a' })).toBe(
+        noteText('- root ^root', '\t- b ^b', '\t- c ^c', ...layout('{\n  "b": {"dx": 5, "dy": 6}\n}')),
+      );
+    });
+
+    it('WHEN moving the branch THEN its offsets and its child\'s are dropped (they were measured from the old parent)', () => {
+      expect(readNote(written(note, { type: 'move', nodeId: 'a', newParentId: 'b' })).positions).toEqual({ b: { dx: 5, dy: 6 } });
+    });
+
+    it('WHEN moving a node with a saved offset under a later sibling THEN only the list and the layout block change', () => {
+      expect(written(note, { type: 'move', nodeId: 'b', newParentId: 'c' })).toBe(
+        noteText(
+          '- root ^root',
+          '\t- a ^a',
+          '\t\t- a1 ^a1',
+          '\t- c ^c',
+          '\t\t- b ^b',
+          ...layout('{\n  "a": {"dx": 1, "dy": 2},\n  "a1": {"dx": 3, "dy": 4}\n}'),
+        ),
+      );
+    });
+
+    it('WHEN deleting a node without a saved offset THEN the layout block is untouched', () => {
+      expect(written(note, { type: 'delete', nodeId: 'c' })).toBe(text.replace('\t- c ^c\n', ''));
+    });
+  });
+
   describe('GIVEN a note indented with two spaces', () => {
     const text = noteText('- root ^r', '  - a ^a', '  - b ^b');
     const note = readNote(text);
