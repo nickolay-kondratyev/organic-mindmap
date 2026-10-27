@@ -75,6 +75,8 @@ export interface MindmapHandle {
   setData(data: MindmapData): void;
   setConfig(config: PartialMindmapConfig | undefined): void;
   setExtensions(extensions: Partial<MindmapExtensions> | undefined): void;
+  /** The full settings the map draws with (`config` merged over the defaults, plus changes made inside the map). */
+  getConfig(): MindmapConfig;
   /** Replaces the user-placed node positions (see `MountOptions.nodeOffsets`); `{}` puts every node back on auto layout. */
   setNodeOffsets(offsets: NodeOffsets): void;
   /**
@@ -192,6 +194,10 @@ class CanvasMount implements MindmapHandle {
   setExtensions(extensions: Partial<MindmapExtensions> | undefined): void {
     this.extensions = resolveExtensions(extensions);
     this.scheduler.request();
+  }
+
+  getConfig(): MindmapConfig {
+    return this.config;
   }
 
   setNodeOffsets(offsets: NodeOffsets): void {
