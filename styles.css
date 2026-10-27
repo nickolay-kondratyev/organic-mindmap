@@ -18,3 +18,120 @@
   margin: var(--size-4-8) auto;
   padding: var(--size-4-4);
 }
+
+/* The gear + look panel over the map (`MapSettingsPanel`). Theme variables only, so light and dark themes both work. */
+.organic-mindmap-settings-widget {
+  position: absolute;
+  top: var(--size-4-2);
+  right: var(--size-4-2);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--size-4-2);
+  /* Only the gear and the open panel take pointer events; the map around them stays interactive. */
+  pointer-events: none;
+}
+
+.organic-mindmap-settings-widget > * {
+  pointer-events: auto;
+}
+
+/* Its own surface: the map's background is any color (dark by default), so a bare icon could vanish into it. */
+.organic-mindmap-settings-gear.clickable-icon {
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow: var(--shadow-s);
+}
+
+/* Opaque states only: Obsidian's translucent hover/active modifiers would turn the button into the map's color. */
+.organic-mindmap-settings-gear.clickable-icon:hover {
+  background-color: var(--background-secondary);
+}
+
+.organic-mindmap-settings-gear.clickable-icon.is-active {
+  color: var(--icon-color-active);
+  background-color: var(--background-primary);
+  border-color: var(--interactive-accent);
+}
+
+.organic-mindmap-settings-panel {
+  /* Compact: roughly a dropdown plus its label; never taller than the map (scrolls instead). */
+  width: min(336px, calc(100vw - var(--size-4-8)));
+  max-height: calc(100% - var(--size-4-12));
+  overflow-y: auto;
+  padding: var(--size-4-3) var(--size-4-4);
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-l);
+}
+
+.organic-mindmap-settings-panel[hidden] {
+  display: none;
+}
+
+.organic-mindmap-settings-panel:focus-visible {
+  outline: none;
+}
+
+.organic-mindmap-settings-panel-header {
+  padding-bottom: var(--size-4-2);
+}
+
+.organic-mindmap-settings-panel-title {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  color: var(--text-normal);
+}
+
+.organic-mindmap-settings-panel-hint {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-muted);
+}
+
+/*
+ * Compact rows: the map shows what each control does, so the tab's longer descriptions stay in the tab. Flat (no
+ * row cards): the panel is already the one frame, cards inside it would invent a second level.
+ */
+.organic-mindmap-settings-panel .setting-item {
+  padding: var(--size-4-1) 0;
+  margin: 0;
+  gap: var(--size-4-3);
+  background: none;
+  border-radius: 0;
+}
+
+/* The label keeps its room; a long choice ellipsizes inside a fixed-width dropdown instead of squeezing it out. */
+.organic-mindmap-settings-panel .setting-item-info {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.organic-mindmap-settings-panel .setting-item-control {
+  flex: 0 0 auto;
+}
+
+.organic-mindmap-settings-panel .setting-item-control select {
+  width: 172px;
+}
+
+.organic-mindmap-settings-panel .setting-item-description {
+  display: none;
+}
+
+.organic-mindmap-settings-panel .setting-item-name {
+  font-size: var(--font-ui-small);
+}
+
+/* The reset row's name only repeats its button; the button alone states the scope. */
+.organic-mindmap-settings-panel .organic-mindmap-reset-look .setting-item-info {
+  display: none;
+}
+
+.organic-mindmap-settings-panel .organic-mindmap-reset-look {
+  margin-top: var(--size-4-2);
+}
+
+.organic-mindmap-settings-panel .organic-mindmap-reset-look .setting-item-control {
+  justify-content: flex-start;
+}

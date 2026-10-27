@@ -66,6 +66,8 @@ function addBackgroundSetting(containerEl: HTMLElement, settings: MapSettings): 
 function addResetSetting(containerEl: HTMLElement, settings: MapSettings, afterReset: () => void): void {
   new Setting(containerEl)
     .setName(RESET_BUTTON_LABEL)
+    // Lets a compact surface (the map's panel) drop the row name that only repeats the button.
+    .setClass('organic-mindmap-reset-look')
     .setDesc('Branch colors, fonts and background color go back to how the plugin ships. Nothing else changes.')
     .addButton((button) =>
       button.setButtonText(RESET_BUTTON_LABEL).onClick(() => {
