@@ -11,7 +11,7 @@ import {
 import { CREATE_MINDMAP_COMMAND } from '../src/commands';
 import { DELETE_LABEL, UNDO_LABEL } from '../src/mapView/deleteLabels';
 import { MINDMAP_FILE_SUFFIX, NEW_NOTE_ROOT_TEXT } from '../src/mapView/newNote';
-import { MINDMAP_VIEW_TYPE } from '../src/mapView/viewSwitch';
+import { MARKDOWN_VIEW_TYPE, MINDMAP_VIEW_TYPE } from '../src/mapView/viewSwitch';
 import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
 
 /**
@@ -20,7 +20,8 @@ import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
  * it; drag a node, reopen the note -> the node is where it was left (ticket nid_kjtran7bnslnah9gj2fjr69rx_e); delete a
  * node from its right-click menu, then "Undo" -> the note text is back (ticket nid_48incacjmuach0kymaasz36du_e);
  * drag a node with a child onto another node and confirm "Make child" -> the branch is nested there in the note, and
- * deleting a node removes its child too (ticket nid_0v1xv98rj4u0fertn6uxlhbeg_e).
+ * deleting a node removes its child too (ticket nid_0v1xv98rj4u0fertn6uxlhbeg_e); click a link node -> a plain note opens
+ * as Markdown, a mindmap note as a map, and going back returns to the map (ticket nid_fai5tp8qj4o6vpf0gmjj6h8rg_e).
  * Everything else is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
  * import `obsidian`.
  */
@@ -44,6 +45,23 @@ const DELETED_CHILD_ID = 'dandelion';
 const MOVE_MAP_PATH = 'Move map.md';
 const MOVE_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Kitchen ^root', '\t- Pantry ^pantry', '\t\t- Spices ^spices', '\t- Cellar ^cellar', ''].join('\n');
 const MOVED_NODE_ID = 'pantry';
+const LINKS_MAP_PATH = 'Links map.md';
+const PLAIN_NOTE_PATH = 'Plain note.md';
+const LINKED_MAP_PATH = 'Linked map.md';
+const PLAIN_LINK_NODE_ID = 'plainlink';
+const MAP_LINK_NODE_ID = 'maplink';
+const LINKS_MAP_TEXT = [
+  '---',
+  'organic-mindmap: 1',
+  '---',
+  '- Reading ^root',
+  `\t- [[Plain note]] ^${PLAIN_LINK_NODE_ID}`,
+  `\t- [[Linked map]] ^${MAP_LINK_NODE_ID}`,
+  '',
+].join('\n');
+const LINKED_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Linked map root ^root', ''].join('\n');
+/** Obsidian's built-in "Navigate back" command. */
+const GO_BACK_COMMAND_ID = 'app:go-back';
 const NEW_PARENT_ID = 'cellar';
 /** The moved branch as the note should hold it: last child of the new parent, every level re-indented, ids kept. */
 const MOVED_BRANCH_LINES = '\t- Cellar ^cellar\n\t\t- Pantry ^pantry\n\t\t\t- Spices ^spices\n';
@@ -69,6 +87,9 @@ test.beforeAll(async () => {
       [POSITIONS_MAP_PATH]: POSITIONS_MAP_TEXT,
       [DELETE_MAP_PATH]: DELETE_MAP_TEXT,
       [MOVE_MAP_PATH]: MOVE_MAP_TEXT,
+      [LINKS_MAP_PATH]: LINKS_MAP_TEXT,
+      [PLAIN_NOTE_PATH]: '# Plain note\n\nJust text.\n',
+      [LINKED_MAP_PATH]: LINKED_MAP_TEXT,
     },
   });
   page = harness.page;
@@ -321,5 +342,45 @@ test.describe('GIVEN a node with a child dragged onto another node', () => {
 
   test('WHEN the move is written THEN the map shows the node under its new parent', async () => {
     await expect.poll(async () => (await activeMapData())?.find((node) => node.id === MOVED_NODE_ID)?.parentId).toBe(NEW_PARENT_ID);
+  });
+});
+
+/** The active leaf's view type and file, as one value so a mismatch prints both. */
+async function activeViewAndFile(): Promise<{ type: string | null; path: string | null }> {
+  return { type: await activeViewType(), path: await activeFilePath() };
+}
+
+/** A plain left click on a node once painted, the way a person opens its link. */
+async function clickNode(nodeId: string): Promise<void> {
+  const { box } = await nodeBoxOnPage(nodeId);
+  await page.mouse.click(box.center.x, box.center.y);
+}
+
+test.describe('GIVEN a map with link nodes to a plain note and to a mindmap note, open as a map', () => {
+  test.beforeEach(async () => {
+    await harness.openFile(LINKS_MAP_PATH);
+    await expect.poll(activeViewAndFile).toEqual({ type: MINDMAP_VIEW_TYPE, path: LINKS_MAP_PATH });
+  });
+
+  test('WHEN the plain note\'s link node is clicked THEN the plain note opens as Markdown', async () => {
+    await clickNode(PLAIN_LINK_NODE_ID);
+    await expect.poll(activeViewAndFile).toEqual({ type: MARKDOWN_VIEW_TYPE, path: PLAIN_NOTE_PATH });
+  });
+
+  test('WHEN back navigation runs after opening the plain note from the map THEN the map shows again', async () => {
+    await clickNode(PLAIN_LINK_NODE_ID);
+    await expect.poll(activeViewAndFile).toEqual({ type: MARKDOWN_VIEW_TYPE, path: PLAIN_NOTE_PATH });
+    await harness.runCommand(GO_BACK_COMMAND_ID);
+    await expect.poll(activeViewAndFile).toEqual({ type: MINDMAP_VIEW_TYPE, path: LINKS_MAP_PATH });
+  });
+
+  test('WHEN the mindmap note\'s link node is clicked THEN that note opens as a map', async () => {
+    await clickNode(MAP_LINK_NODE_ID);
+    await expect.poll(activeViewAndFile).toEqual({ type: MINDMAP_VIEW_TYPE, path: LINKED_MAP_PATH });
+  });
+
+  test('WHEN a plain note is opened in the map\'s leaf another way (as the file explorer does) THEN it opens as Markdown', async () => {
+    await harness.openFile(PLAIN_NOTE_PATH);
+    await expect.poll(activeViewAndFile).toEqual({ type: MARKDOWN_VIEW_TYPE, path: PLAIN_NOTE_PATH });
   });
 });

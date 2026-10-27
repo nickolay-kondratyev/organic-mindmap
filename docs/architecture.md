@@ -281,7 +281,10 @@ page and loads none of the runner code or CSS.
   file text, not by name or metadata cache, so there is one rule and no indexing lag. The wrap itself is
   `viewRouting.ts` over `monkey-around` (what Kanban uses): unloading restores the original only when ours is
   still the outermost wrapper, else ours stays as a pass-through, so another plugin's later wrap survives our unload.
-  Node clicks open the first `[[link]]` of the item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
+  `MindmapNoteView.canAcceptExtension` is `false`: `leaf.openFile` (links, file explorer, quick switcher) keeps the
+  leaf's view type for a `FileView` that accepts the extension, which loaded plain notes into the map; declining
+  makes those opens ask for `markdown`, so the routing above decides. Node clicks open the first `[[link]]` of the
+  item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
   `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`,
   esbuild `binary` loader) behind the library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not
   bundled), so the plugin never fetches from a CDN and still imports only the library's public entry points.
