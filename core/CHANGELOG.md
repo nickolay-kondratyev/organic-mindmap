@@ -25,6 +25,8 @@ While 0.x, a minor version may change the API.
   (`organic-mindmap-font-*`), the pending/draft node ids and the console warning prefix. No behavior change.
 - A dragged node now keeps its place relative to its parent: when the auto layout moves the parent (e.g. a node is
   added), the dragged node moves with it instead of staying at its old scene point.
+- Every node shows its hover "+" on both sides (before: only the root; other nodes had one on their tree side, which
+  pointed into the map after the branch was dragged across the root). Both add a child.
 
 ## 0.2.0
 
