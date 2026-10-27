@@ -281,9 +281,21 @@ page and loads none of the runner code or CSS.
   `viewRouting.ts` over `monkey-around` (what Kanban uses): unloading restores the original only when ours is
   still the outermost wrapper, else ours stays as a pass-through, so another plugin's later wrap survives our unload.
   Node clicks open the first `[[link]]` of the item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
-  `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`,
-  esbuild `binary` loader) behind the library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not
-  bundled), so the plugin never fetches from a CDN and still imports only the library's public entry points.
+  `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`)
+  and the plugin's own vendored choices (`assets/fonts/<name>/`, SIL OFL) with the esbuild `binary` loader, behind the
+  library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not bundled), so the plugin never fetches from
+  a CDN and still imports only the library's public entry points.
+- `src/settings/` is the settings tab over the library config. `MapSettings` (pure) holds the one `MindmapConfig`
+  every map draws with: loaded through the library's `SettingsPersistence` over `loadData`/`saveData` (`main.ts`,
+  before any view mounts), written by explicit setters (palette, background, node/branch font, `resetLook`) and by
+  `replace` for changes made inside a map (`onConfigChange`, e.g. "Don't ask again", so they survive restarts too);
+  every write is stored and pushed to `onChange` listeners, and each `MindmapNoteView` mounts with `settings.config`
+  and follows with `setConfig`. `palettePresets.ts` names a few palettes (default length, every fill clears
+  `MIN_WHITE_TEXT_CONTRAST` for white labels; a stored palette matching none shows as "Custom" and is kept);
+  `fontChoices.ts` maps bundled fonts to the pinned Fontsource URLs the config stores, and `withBundledFontsOnly`
+  swaps an unbundled stored URL for the default font at load. `MapSettingsTab` (imports `obsidian`) is thin: native
+  `Setting` dropdowns, a color picker and one reset scoped to what the tab shows. Presets and choices are plugin-side
+  on purpose: the library stays a config, not a catalogue.
 - Obsidian E2E (`npm run test:e2e:obsidian`, `e2e/*.e2e.ts`): `scripts/run-e2e.sh` provisions a pinned Obsidian
   (`scripts/setup-obsidian-bin.sh`, Linux download into `.tmp/obsidian-e2e/bin/`, or `OBSIDIAN_PATH`), seeds
   `.dev-vault/` with the built plugin, then `e2e/obsidianHarness.ts` spawns Obsidian on a throwaway copy of the vault
