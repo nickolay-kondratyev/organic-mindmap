@@ -132,6 +132,9 @@ branches per pointer move, over a frozen base scene.
   and fit via the R15 cascade in `text/branchTextFit.ts`. Node labels fit via `text/nodeTextFit.ts`: shrink down to
   `text.nodeFit.minFontScale` (default 0 = unlimited, today's look), then cut and end with "…"; the fit is
   measurement-agnostic (glyph runs or `measureText`).
+  Link nodes (`MindmapNode.link`, set by the host) are inked in `theme.color.link` and underlined on both the node
+  and the branch (`text/labelUnderline.ts`: one segment under each placed glyph, so the line follows the curve;
+  painted before the glyphs with the same outline), and show the pointer cursor. Unmarked labels are unchanged.
   Fallback (the one R17 exception): a label with a character its font lacks (`LoadedFont.coversText`: glyph 0 by
   code point; whitespace, U+200D and variation selectors never count) is skipped on its branch and drawn on its node
   by `paintSystemTextLabel` with `fillText` and the CSS family list from `CssFontFaces` (label font first, so the
@@ -258,7 +261,9 @@ page and loads none of the runner code or CSS.
   `setPositions` writes the whole offsets set the map reports and drops ids not in the list; `move` and `delete`
   drop the branch's saved offsets in the same write, so Undo restores them with the branch), and
   `newMindmapNoteText`. It parses the text itself (WHY-NOT the metadata cache: it lags behind typing and is missing
-  in unit tests). Ids generated for items without a block id only exist in that read and reach the file with the
+  in unit tests). `toMindmapData` marks items with a `[[link]]` / `![[embed]]` as `link` by the same rule a click
+  uses to open one (`linkTarget.ts` `firstLinkTarget`), so looking like a link and opening one never disagree.
+  Ids generated for items without a block id only exist in that read and reach the file with the
   next write, so writes always go through the `MindmapNote` the map was drawn from.
 - `src/mapView/` is the map of one mindmap note. `MindmapNoteView` (a `FileView`, the only file importing
   `obsidian` besides `main.ts`) mounts `mountMindmap` on a canvas, re-reads the note on every `vault` `modify` of its
@@ -284,7 +289,7 @@ page and loads none of the runner code or CSS.
   `MindmapNoteView.canAcceptExtension` is `false`: `leaf.openFile` (links, file explorer, quick switcher) keeps the
   leaf's view type for a `FileView` that accepts the extension, which loaded plain notes into the map; declining
   makes those opens ask for `markdown`, so the routing above decides. Node clicks open the first `[[link]]` of the
-  item (`linkTarget.ts`) via `workspace.openLinkText`. Fonts:
+  item (`mindmapNote/linkTarget.ts`) via `workspace.openLinkText`. Fonts:
   `bundledFonts.ts` inlines the library's published Kalam subpath (`organic-mindmap/fonts/kalam-latin-400-normal.ttf`,
   esbuild `binary` loader) behind the library's `fontFetcher` seam (`fontBytes.ts`, rejects any URL that is not
   bundled), so the plugin never fetches from a CDN and still imports only the library's public entry points.

@@ -399,15 +399,16 @@ export class CanvasInteractions {
     const config = this.host.config();
     const { zoom } = this.host.view.view;
     const style = config.text.node;
-    const isRoot = scene.tree.nodeById(nodeId).parentId === null;
+    const node = scene.tree.nodeById(nodeId);
+    const ink = nodeLabelInk(config, node.parentId === null, node.link === true);
     return {
       center: this.host.view.sceneToScreen(box.center),
       width: box.size.width * EDITOR_WIDTH_FRACTION * zoom,
       fontSizePx: style.sizePx * zoom,
       fontFamily: this.host.cssFontFamily(this.host.fonts().node),
-      bold: nodeLabelInk(config, isRoot).bold,
+      bold: ink.bold,
       letterSpacingEm: style.letterSpacingEm,
-      color: nodeLabelInk(config, isRoot).fill,
+      color: ink.fill,
       background: scene.colors.get(nodeId)?.fill ?? config.theme.color.background,
     };
   }
@@ -459,6 +460,8 @@ export class CanvasInteractions {
     if (this.drag !== null) return CURSOR.grabbing;
     if (this.host.edits.status.kind === 'pending') return CURSOR.busy;
     if (target?.kind === 'handle') return CURSOR.button;
+    // A link node opens something on click, so it shows the familiar link cursor even though it can also be dragged.
+    if (target?.kind === 'node' && this.painted?.tree.nodeById(target.nodeId).link === true) return CURSOR.button;
     if (target?.kind === 'node' && this.painted !== null && this.isMovable(this.painted, target.nodeId)) return CURSOR.grab;
     return CURSOR.idle;
   }

@@ -11,6 +11,7 @@ describe('parentDerivedColorStrategy', () => {
       nodeText: '#fff',
       branchText: '#fff',
       textOutline: '#000',
+      link: '#00f',
       highlight: '#fff',
       palette: [
         { fill: '#p0', outline: '#o0' },

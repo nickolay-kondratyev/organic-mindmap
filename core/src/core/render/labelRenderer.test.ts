@@ -6,7 +6,7 @@ import { REFERENCE_DATA } from '../model/referenceData';
 import { GlyphRun } from '../text/glyphRun';
 import type { PlacedGlyph } from '../text/glyphPlacement';
 import { LoadedFont } from '../text/loadedFont';
-import { drawLabels, layoutSceneBranchLabel, nodeLabelInk } from './labelRenderer';
+import { branchLabelInk, drawLabels, layoutSceneBranchLabel, nodeLabelInk } from './labelRenderer';
 import { buildScene } from './scene';
 
 describe('nodeLabelInk', () => {
@@ -14,15 +14,48 @@ describe('nodeLabelInk', () => {
   const config = DEFAULT_CONFIG;
 
   it('WHEN inking the root label THEN it is bold', () => {
-    expect(nodeLabelInk(config, true).bold).toBe(true);
+    expect(nodeLabelInk(config, true, false).bold).toBe(true);
   });
 
   it('WHEN inking the root label THEN it uses the root text color', () => {
-    expect(nodeLabelInk(config, true).fill).toBe(config.theme.color.root.text);
+    expect(nodeLabelInk(config, true, false).fill).toBe(config.theme.color.root.text);
   });
 
   it('WHEN inking a non-root label THEN it follows the node text config', () => {
-    expect(nodeLabelInk(config, false).bold).toBe(config.text.node.bold);
+    expect(nodeLabelInk(config, false, false).bold).toBe(config.text.node.bold);
+  });
+
+  it('WHEN inking a plain label THEN it is not underlined', () => {
+    expect(nodeLabelInk(config, false, false).underline).toBe(false);
+  });
+
+  it('WHEN inking a link label THEN it is underlined', () => {
+    expect(nodeLabelInk(config, false, true).underline).toBe(true);
+  });
+
+  it('WHEN inking a link label THEN it uses the link color', () => {
+    expect(nodeLabelInk(config, false, true).fill).toBe(config.theme.color.link);
+  });
+
+  it('WHEN inking a link root label THEN it uses the link color', () => {
+    expect(nodeLabelInk(config, true, true).fill).toBe(config.theme.color.link);
+  });
+});
+
+describe('branchLabelInk', () => {
+  // GIVEN the default config
+  const config = DEFAULT_CONFIG;
+
+  it('WHEN inking a plain branch label THEN it uses the branch text color', () => {
+    expect(branchLabelInk(config, false).fill).toBe(config.theme.color.branchText);
+  });
+
+  it('WHEN inking a link branch label THEN it uses the link color', () => {
+    expect(branchLabelInk(config, true).fill).toBe(config.theme.color.link);
+  });
+
+  it('WHEN inking a link branch label THEN it is underlined', () => {
+    expect(branchLabelInk(config, true).underline).toBe(true);
   });
 });
 
@@ -89,5 +122,43 @@ describe('GIVEN a map whose only child label has CJK characters the vendored Kal
 
   it('WHEN labels are drawn THEN only the root label is inked from outlines: the CJK branch label is skipped', () => {
     expect(calls.filter((c) => c.method === 'fill')).toHaveLength(1);
+  });
+});
+
+describe('GIVEN a map whose only child label has CJK characters the vendored Kalam font lacks, once plain and once a link', () => {
+  const data: MindmapData = [
+    { id: 'root', parentId: null, text: 'Root' },
+    { id: 'jp', parentId: 'root', text: '\u65e5\u672c' },
+  ];
+  const font = LoadedFont.parse(vendoredKalamBytes());
+  const strokesFor = (nodes: MindmapData): number => {
+    const { ctx, calls } = recordingContext();
+    const scene = buildScene(nodes, DEFAULT_CONFIG, DEFAULT_EXTENSIONS);
+    drawLabels(ctx, scene, DEFAULT_CONFIG, DEFAULT_EXTENSIONS, { node: font, branch: font }, { nodeFontFamily: '"kalam", cursive' });
+    return calls.filter((c) => c.method === 'stroke').length;
+  };
+
+  it('WHEN labels are drawn THEN the link label adds exactly one stroke: its underline on the system-font node label', () => {
+    const linked = data.map((node) => (node.id === 'jp' ? { ...node, link: true } : node));
+    expect(strokesFor(linked) - strokesFor(data)).toBe(1);
+  });
+});
+
+describe('GIVEN a map whose only child label the vendored Kalam font covers, once plain and once a link', () => {
+  const data: MindmapData = [
+    { id: 'root', parentId: null, text: 'Root' },
+    { id: 'note', parentId: 'root', text: 'Some note' },
+  ];
+  const font = LoadedFont.parse(vendoredKalamBytes());
+  const strokesFor = (nodes: MindmapData): number => {
+    const { ctx, calls } = recordingContext();
+    const scene = buildScene(nodes, DEFAULT_CONFIG, DEFAULT_EXTENSIONS);
+    drawLabels(ctx, scene, DEFAULT_CONFIG, DEFAULT_EXTENSIONS, { node: font, branch: font }, { nodeFontFamily: '"kalam", cursive' });
+    return calls.filter((c) => c.method === 'stroke').length;
+  };
+
+  it('WHEN labels are drawn THEN the link adds three strokes: the branch underline (outline, line) and the node underline', () => {
+    const linked = data.map((node) => (node.id === 'note' ? { ...node, link: true } : node));
+    expect(strokesFor(linked) - strokesFor(data)).toBe(3);
   });
 });

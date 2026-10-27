@@ -10,6 +10,7 @@ import { claimUniqueBlockId, type BlockIdSource } from './blockId';
 import { findLayoutBlock, formatLayoutJsonLines, newLayoutBlockLines } from './layoutBlock';
 import { appendBlockId, formatListItemLine, isBulletMarker, toSingleLine, type ListItemLine } from './listItemLine';
 import { displayLabel } from './linkLabel';
+import { firstLinkTarget } from './linkTarget';
 import { indentWidth, isBlank, NoteLines, reindent } from './noteLines';
 
 /** One map node as read from the note. */
@@ -91,12 +92,18 @@ export class MindmapNote {
       label: displayLabel(item.line.text),
       rawText: item.line.text,
     }));
-    this.data = this.nodes.map((node) => ({ id: node.id, parentId: node.parentId, text: node.label }));
+    this.data = this.nodes.map((node) => ({
+      id: node.id,
+      parentId: node.parentId,
+      text: node.label,
+      // Same rule as the click (`firstLinkTarget`), so a node looks like a link exactly when a click opens one.
+      ...(firstLinkTarget(node.rawText) === null ? {} : { link: true }),
+    }));
     this.indentUnit = detectIndentUnit(parts.items, this.items);
     this.bullet = isBulletMarker(root.line.marker) ? root.line.marker : DEFAULT_BULLET;
   }
 
-  /** The library's data: one node per item, labels as shown. */
+  /** The library's data: one node per item, labels as shown, items with a `[[link]]` marked as links. */
   toMindmapData(): MindmapData {
     return this.data;
   }
