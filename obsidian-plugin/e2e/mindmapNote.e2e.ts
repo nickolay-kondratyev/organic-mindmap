@@ -29,6 +29,8 @@ const DRAGGED_NODE_ID = 'pack';
 const DELETE_MAP_PATH = 'Delete map.md';
 const DELETE_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Garden ^root', '\t- Weeds ^weeds', '\t- Roses ^roses', ''].join('\n');
 const DELETED_NODE_ID = 'weeds';
+const FIRST_CHILD_TEXT = 'First idea';
+const GRANDCHILD_TEXT = 'A detail';
 /** Screen px to drag the node straight down; far enough to be a clear move, into empty canvas. */
 const DRAG_DOWN_PX = 120;
 const DRAG_STEPS = 12;
@@ -80,18 +82,32 @@ async function vaultFileText(vaultPath: string): Promise<string | null> {
   }, vaultPath);
 }
 
-/** The root node's box in page coordinates, waiting until the map has painted it. */
-async function rootNodeBox(): Promise<{ box: NodeBox; zoom: number }> {
-  const handle = await page.waitForFunction(() => {
-    const view = (window as unknown as ObsidianWindow).app.workspace.activeLeaf?.view;
-    const root = view?.mapHandle?.getData().find((node: { parentId: string | null }) => node.parentId === null);
-    const box = root === undefined ? null : view.mapHandle.getNodeScreenBox(root.id);
-    return box === null ? null : { box, zoom: view.mapHandle.getView().zoom };
-  });
-  const { box, zoom } = (await handle.jsonValue()) as { box: NodeBox; zoom: number };
+/**
+ * A node's box in page coordinates and the side its "+" is on (the root: right; others: the side of the root they
+ * lie on), waiting until the map has painted it.
+ */
+async function nodeBoxOnPage(nodeId: string): Promise<{ box: NodeBox; zoom: number; side: 'left' | 'right' }> {
+  const handle = await page.waitForFunction((id) => {
+    const map = (window as unknown as ObsidianWindow).app.workspace.activeLeaf?.view?.mapHandle;
+    const root = map?.getData().find((node: { parentId: string | null }) => node.parentId === null);
+    const box = root === undefined ? null : map.getNodeScreenBox(id);
+    const rootBox = root === undefined ? null : map.getNodeScreenBox(root.id);
+    if (box === null || rootBox === null) return null;
+    return { box, zoom: map.getView().zoom, side: box.center.x < rootBox.center.x ? 'left' : 'right' };
+  }, nodeId);
+  const { box, zoom, side } = (await handle.jsonValue()) as { box: NodeBox; zoom: number; side: 'left' | 'right' };
   const canvas = await page.locator('.workspace-leaf.mod-active canvas').boundingBox();
   if (canvas === null) throw new Error('The active map canvas is not visible');
-  return { box: { center: { x: canvas.x + box.center.x, y: canvas.y + box.center.y }, size: box.size }, zoom };
+  return { box: { center: { x: canvas.x + box.center.x, y: canvas.y + box.center.y }, size: box.size }, zoom, side };
+}
+
+/** Waits until the active map has painted its root. */
+async function rootPainted(): Promise<void> {
+  await page.waitForFunction(() => {
+    const map = (window as unknown as ObsidianWindow).app.workspace.activeLeaf?.view?.mapHandle;
+    const root = map?.getData().find((node: { parentId: string | null }) => node.parentId === null);
+    return root !== undefined && map.getNodeScreenBox(root.id) !== null;
+  });
 }
 
 /**
@@ -129,18 +145,54 @@ test('WHEN "Create new mindmap" runs THEN a mindmap note opens as a map showing 
   await expect.poll(async () => (await activeMapData())?.map((node) => node.text)).toEqual([NEW_NOTE_ROOT_TEXT]);
 });
 
-test('WHEN a child is added on the map via the root\'s "+" THEN the note text contains it', async () => {
+/**
+ * WHY: the map is drawn for the size given to `resize`; when that is not the canvas's own CSS box the bitmap is
+ * scaled into the box and nothing drawn lines up with where clicks are hit-tested (the "+" a person sees is not
+ * where the "+" is). The journeys below click computed positions, so only this invariant catches that.
+ */
+test('WHEN a map is shown THEN its canvas bitmap is exactly its CSS box times the device pixel ratio', async () => {
+  await rootPainted();
+  // One string each, so a mismatch prints both sizes side by side.
+  const sizes = await page.evaluate(() => {
+    const canvas = document.querySelector('.workspace-leaf.mod-active canvas') as HTMLCanvasElement;
+    const cssBox = `${Math.round(canvas.clientWidth * window.devicePixelRatio)}x${Math.round(canvas.clientHeight * window.devicePixelRatio)}`;
+    return { bitmap: `${canvas.width}x${canvas.height}`, cssBox };
+  });
+  expect(sizes.bitmap).toBe(sizes.cssBox);
+});
+
+/** The way a person adds: hover the node, click its "+", type (the input took focus), Enter. */
+async function addChildViaPlus(nodeId: string, label: string): Promise<void> {
+  const { box, zoom, side } = await nodeBoxOnPage(nodeId);
+  // The root shows a "+" on both sides; take the right one. Other nodes show one on their outer side.
+  const outward = side === 'left' ? -1 : 1;
+  const plus = { x: box.center.x + outward * (box.size.width / 2 + (HANDLE_GAP + HANDLE_RADIUS) * zoom), y: box.center.y };
+  await page.mouse.move(box.center.x, box.center.y);
+  await page.mouse.move(plus.x, plus.y, { steps: Math.ceil(Math.abs(plus.x - box.center.x) / POINTER_STEP_PX) });
+  await page.mouse.click(plus.x, plus.y);
+  await expect(page.getByRole('textbox', { name: LABEL_EDITOR_ACCESSIBLE_NAME })).toBeFocused();
+  await page.keyboard.type(label);
+  await page.keyboard.press('Enter');
+}
+
+test('WHEN a child is added on the map via the root\'s "+" THEN the note text and the map contain it', async () => {
   const mapPath = await activeFilePath();
   if (mapPath === null) throw new Error('No active mindmap note');
-  const { box: root, zoom } = await rootNodeBox();
-  // The root shows a "+" on both sides; take the right one.
-  const plus = { x: root.center.x + root.size.width / 2 + (HANDLE_GAP + HANDLE_RADIUS) * zoom, y: root.center.y };
-  await page.mouse.move(root.center.x, root.center.y);
-  await page.mouse.move(plus.x, plus.y, { steps: Math.ceil((plus.x - root.center.x) / POINTER_STEP_PX) });
-  await page.mouse.click(plus.x, plus.y);
-  await page.getByRole('textbox', { name: LABEL_EDITOR_ACCESSIBLE_NAME }).fill('First idea');
-  await page.keyboard.press('Enter');
-  await expect.poll(() => vaultFileText(mapPath)).toContain('\t- First idea ^');
+  const rootId = (await activeMapData())?.find((node) => node.parentId === null)?.id;
+  if (rootId === undefined) throw new Error('No root on the active map');
+  await addChildViaPlus(rootId, FIRST_CHILD_TEXT);
+  await expect.poll(() => vaultFileText(mapPath)).toContain(`\t- ${FIRST_CHILD_TEXT} ^`);
+  await expect.poll(async () => (await activeMapData())?.map((node) => node.text)).toContain(FIRST_CHILD_TEXT);
+});
+
+test('WHEN a grandchild is added via the new child\'s "+" THEN the note text nests it under the child and the map shows it', async () => {
+  const mapPath = await activeFilePath();
+  if (mapPath === null) throw new Error('No active mindmap note');
+  const childId = (await activeMapData())?.find((node) => node.text === FIRST_CHILD_TEXT)?.id;
+  if (childId === undefined) throw new Error('The first child is not on the map');
+  await addChildViaPlus(childId, GRANDCHILD_TEXT);
+  await expect.poll(() => vaultFileText(mapPath)).toContain(`\t\t- ${GRANDCHILD_TEXT} ^`);
+  await expect.poll(async () => (await activeMapData())?.find((node) => node.text === GRANDCHILD_TEXT)?.parentId).toBe(childId);
 });
 
 test.describe('GIVEN a mindmap note linking to another note, open as a map', () => {

@@ -77,7 +77,11 @@ export interface MindmapHandle {
   setExtensions(extensions: Partial<MindmapExtensions> | undefined): void;
   /** Replaces the user-placed node positions (see `MountOptions.nodeOffsets`); `{}` puts every node back on auto layout. */
   setNodeOffsets(offsets: NodeOffsets): void;
-  /** Size in CSS pixels; the backing store is scaled by `devicePixelRatio`. */
+  /**
+   * The canvas's own CSS box (`canvas.clientWidth/Height`, not its container's: padding would make them differ);
+   * the backing store is scaled by `devicePixelRatio`. The library never sets the canvas's CSS size, so a bitmap
+   * sized to anything else is scaled into the box and the drawing no longer lines up with pointer hit-testing.
+   */
   resize(width: number, height: number, devicePixelRatio: number): void;
   /** Font loading status (spec L6); the same value `onFontStatusChange` last reported. */
   fontStatus(): LabelFontStatus;

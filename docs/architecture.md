@@ -289,6 +289,8 @@ page and loads none of the runner code or CSS.
   with an isolated `--user-data-dir`, attaches over CDP (not `_electron.launch`), seeds the window size, enables the
   plugin at runtime, pins the Obsidian settings the journeys rely on (`alwaysUpdateLinks`) and exposes `openFile` /
   `runCommand` / `hasCommand` / `relaunch`. The mechanics are documented in the harness; keep them. The map has no DOM,
-  so specs read it through the active view's `mapHandle` (the library handle). Specs never import plugin modules that import `obsidian`. Key journeys only, no look
-  assertions; one Obsidian per spec file, serial.
+  so specs read it through the active view's `mapHandle` (the library handle); pointer journeys click positions computed
+  from it, so one spec asserts the canvas bitmap equals its CSS box times `devicePixelRatio` (else the drawn map is
+  scaled away from where clicks are hit-tested and the computed positions prove nothing). Specs never import plugin
+  modules that import `obsidian`. Key journeys only, no look assertions; one Obsidian per spec file, serial.
 
