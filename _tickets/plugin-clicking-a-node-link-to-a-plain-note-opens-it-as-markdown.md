@@ -1,11 +1,11 @@
 ---
 id: nid_fai5tp8qj4o6vpf0gmjj6h8rg_e
 title: "Plugin: clicking a node link to a plain note opens it as Markdown"
-status: open
+status: in_progress
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:11:07Z
+status_updated_iso: 2026-10-27T15:12:36Z
 type: feature
 priority: 1
 assignee: CC_WITH-nickolaykondratyev

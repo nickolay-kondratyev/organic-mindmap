@@ -1,11 +1,11 @@
 ---
 id: nid_8ldir8fohuk5xcwue8ej8noex_e
 title: "Map: show the '+' on both sides of every node"
-status: open
+status: in_progress
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:11:07Z
+status_updated_iso: 2026-10-27T15:12:36Z
 type: feature
 priority: 1
 assignee: CC_WITH-nickolaykondratyev

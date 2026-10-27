@@ -1,11 +1,11 @@
 ---
 id: nid_3dc4tbkt1il822ulzdmloxna1_e
 title: "Plugin: settings tab for branch colors, label fonts and background color"
-status: open
+status: in_progress
 deps: []
 links: []
 created_iso: 2026-10-27T15:11:07Z
-status_updated_iso: 2026-10-27T15:11:07Z
+status_updated_iso: 2026-10-27T15:12:36Z
 type: feature
 priority: 1
 assignee: CC_WITH-nickolaykondratyev
