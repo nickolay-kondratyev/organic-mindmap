@@ -195,7 +195,8 @@ organic-mindmap: 1
 - **Nested list = structure; block id = node id.** List items, not headings: headings cannot carry block ids.
   Block ids are letters, digits and `-`, after a space at the end of the line.
 - **Layout block** keyed by block id, inside `%%` so reading view hides it. Unknown ids are dropped; nodes
-  without a saved position get the auto layout.
+  without a saved position get the auto layout. Deleting or moving a branch drops its saved offsets (a moved
+  branch's offsets were measured from the old parent, so it lands at its new parent's auto-layout spot).
 - **WHY-NOT a custom `id` in frontmatter:** Obsidian would not see the links (no backlinks, graph, Dataview,
   rename updates), we would write ids into the user's notes, and "duplicate note" copies them.
 - **The file changes under the open map** (typing, sync, Obsidian rewriting a link after a rename): re-read on

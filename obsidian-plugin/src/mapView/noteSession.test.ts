@@ -97,6 +97,30 @@ describe('MindmapNoteSession', () => {
     });
   });
 
+  describe('GIVEN a session loaded from a note with two branches, one with a child, and a file holding the same text', () => {
+    const twoBranches = noteText('---', 'organic-mindmap: 1', '---', '- Root ^root', '\t- Moved ^m', '\t\t- Moved child ^mc', '\t- Target ^t');
+
+    function loaded(): { session: MindmapNoteSession; file: FakeNoteFile } {
+      const session = new MindmapNoteSession();
+      session.load(twoBranches);
+      return { session, file: new FakeNoteFile(twoBranches) };
+    }
+
+    it('WHEN a branch is moved onto the other THEN the file holds it nested under its new parent, child included', async () => {
+      const { session, file } = loaded();
+      await session.applyEdit({ type: 'move', nodeId: 'm', newParentId: 't' }, file);
+      expect(file.text).toBe(
+        noteText('---', 'organic-mindmap: 1', '---', '- Root ^root', '\t- Target ^t', '\t\t- Moved ^m', '\t\t\t- Moved child ^mc'),
+      );
+    });
+
+    it('WHEN a branch is moved onto the other THEN the edit resolves with the moved node under its new parent', async () => {
+      const { session, file } = loaded();
+      const { data } = await session.applyEdit({ type: 'move', nodeId: 'm', newParentId: 't' }, file);
+      expect(data.find((node) => node.id === 'm')?.parentId).toBe('t');
+    });
+  });
+
   describe('GIVEN a session loaded from a note with a saved position and a file holding the same text', () => {
     const withLayout = noteText(
       '---',
