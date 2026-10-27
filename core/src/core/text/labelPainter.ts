@@ -63,7 +63,8 @@ export function paintLabel(
 
 /**
  * Strokes a link label's underline in the label's fill, with the same outline as its glyphs (spec R16) so it reads
- * on light limbs too. Painted before the glyphs, so their outline cuts the line where descenders cross it.
+ * on light limbs too. Painted before the glyphs, so where descenders cross it the glyphs (and their outline, when the
+ * label has one) sit on top.
  */
 export function paintUnderline(ctx: CanvasRenderingContext2D, underline: Underline, ink: LabelInk): void {
   const [first, ...rest] = underline.points;
