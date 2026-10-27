@@ -1,6 +1,6 @@
 /* Demo runner chrome only; the canvas-only reference page (reference.html) never loads this file. */
 :root {
-  --canvas-bg: #0b1020; /* matches the library's default theme background */
+  --canvas-bg: #2e423a; /* matches the library's default theme background */
   --panel-bg: hsl(226 38% 10%);
   --raised-bg: hsl(226 30% 15%);
   --raised-bg-hover: hsl(226 28% 19%);

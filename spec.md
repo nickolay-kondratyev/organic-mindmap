@@ -22,7 +22,7 @@ The library should expose the different settings, and we should also have a runn
 ## 2. Visual requirements (what the initial view must look like)
 
 **Canvas**
-- R1. Rendered on an HTML canvas over a single dark theme (near-black navy background).
+- R1. Rendered on an HTML canvas over a single dark theme (dark green background, RGB 46, 66, 58).
   - We should have the theming be easily tweakable as well so that can be one of the input parameters like part of the nested object settings.theme.color.XXX
 
 **Nodes**
@@ -267,7 +267,7 @@ color.
 - **Forks:** a parent's children split off as a soft "Y" close to the parent node,
   not as separate long lines.
 - **Colors:** warm, saturated but soft hues (e.g. goldenrod, coral, cornflower blue,
-  sage green, slate violet, orchid, olive, teal) on a near-black navy background.
+  sage green, slate violet, orchid, olive, teal) on a dark green background.
   Each node is outlined in a darker shade of its fill.
 - **Root:** dark slate fill with a slightly lighter outline and a white uppercase label.
 - **Text:** handwritten font, white. Branch labels are about the same size as node

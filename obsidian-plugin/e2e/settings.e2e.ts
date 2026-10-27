@@ -18,7 +18,7 @@ test.describe.configure({ mode: 'serial' });
 
 const MAP_PATH = 'Settings map.md';
 const MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Look ^root', '\t- Colors ^colors', ''].join('\n');
-/** Not the default (`#0b1020`), so a stale default cannot pass. */
+/** Not the default (`#2e423a`), so a stale default cannot pass. */
 const NEW_BACKGROUND = '#204060';
 const NEW_NODE_FONT = fontChoice('nunito');
 /** Differs from both the default and `NEW_BACKGROUND`, so only the panel's write can produce it. */
