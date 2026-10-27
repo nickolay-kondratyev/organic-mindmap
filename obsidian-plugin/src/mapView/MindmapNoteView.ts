@@ -1,4 +1,4 @@
-import { FileView, Menu, Notice, type TFile, type WorkspaceLeaf } from 'obsidian';
+import { FileView, Menu, Notice, Scope, type TFile, type WorkspaceLeaf } from 'obsidian';
 import {
   mountMindmap,
   type EditRequest,
@@ -9,18 +9,28 @@ import {
   type NodeContextMenuEvent,
   type NodeId,
   type NodeOffsets,
+  type NodeOffsetsChangeCause,
 } from 'organic-mindmap';
 import type { MindmapNote } from '../mindmapNote';
 import { DELETE_LABEL, UNDO_LABEL } from './deleteLabels';
+import { EditHistory } from './editHistory';
 import { firstLinkTarget } from './linkTarget';
-import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type WriteSnapshot } from './noteSession';
+import { MindmapNoteSession, NoteClosedError, type NoteTextFile, type UndoResult } from './noteSession';
+import { keyBelongsToTextEntry } from './textEntryFocus';
 import { MINDMAP_VIEW_TYPE } from './viewSwitch';
 
 export const OPEN_AS_MARKDOWN_LABEL = 'Open as Markdown';
 const VIEW_ICON = 'git-fork';
 const DELETED_MESSAGE = 'Deleted from the mindmap.';
-const UNDO_CHANGED_SINCE_MESSAGE = 'Not undone: the note changed after the delete. Use the Markdown view or file recovery to get it back.';
-const UNDO_FAILED_PREFIX = 'Could not undo the delete:';
+const NOTHING_TO_UNDO_MESSAGE = 'Nothing to undo on the map.';
+const NOTHING_TO_REDO_MESSAGE = 'Nothing to redo on the map.';
+/** Shown once per lost history: the map's steps only apply to the text they left (same rule as every map write). */
+const UNDO_CHANGED_SINCE_MESSAGE =
+  'Nothing to undo from the map: the note changed outside the map (e.g. in a Markdown tab or by sync). Use the Markdown view or file recovery to go back further.';
+const REDO_CHANGED_SINCE_MESSAGE = 'Nothing to redo from the map: the note changed outside the map since the undo.';
+const UNDO_FAILED_PREFIX = 'Could not undo:';
+const REDO_FAILED_PREFIX = 'Could not redo:';
+const UNDO_KEY = 'z';
 /** Long enough to notice the delete and reach "Undo". */
 const UNDO_NOTICE_MS = 10_000;
 
@@ -41,6 +51,8 @@ export interface MindmapNoteViewDeps {
  */
 export class MindmapNoteView extends FileView {
   private readonly session = new MindmapNoteSession();
+  /** Undo/redo steps of this view's writes to the note it shows now; dropped with the note. */
+  private readonly history = new EditHistory();
   private handle: MindmapHandle | null = null;
   private resizeObserver: ResizeObserver | null = null;
   /** The note the mounted map currently draws, to skip `setData` when a reload yields the same note. */
@@ -81,6 +93,10 @@ export class MindmapNoteView extends FileView {
   override onload(): void {
     super.onload();
     this.contentEl.addClass('organic-mindmap-view');
+    // Obsidian keeps the view's scope active only while the view is the active (focused) one.
+    this.scope = new Scope(this.app.scope);
+    this.scope.register(['Mod'], UNDO_KEY, (event) => this.handleHistoryKey(event, () => this.undo()));
+    this.scope.register(['Mod', 'Shift'], UNDO_KEY, (event) => this.handleHistoryKey(event, () => this.redo()));
     this.registerEvent(
       this.app.vault.on('modify', (file) => {
         if (this.file !== null && file.path === this.file.path) void this.reloadFromFile();
@@ -96,6 +112,7 @@ export class MindmapNoteView extends FileView {
   override async onUnloadFile(file: TFile): Promise<void> {
     // The same view (and session) shows the next file: writes still in flight for this one must not load into it.
     this.session.close();
+    this.history.clear();
     this.unmount();
     this.contentEl.empty();
     await super.onUnloadFile(file);
@@ -156,7 +173,7 @@ export class MindmapNoteView extends FileView {
       nodeOffsets: note.positions,
       fontFetcher: this.deps.fontFetcher,
       onEditRequest: (request) => this.writeEdit(request),
-      onNodeOffsetsChange: (offsets) => void this.savePositions(offsets),
+      onNodeOffsetsChange: (offsets, cause) => void this.savePositions(offsets, cause),
       onNodeClick: (event) => this.openNodeLink(event),
       onNodeContextMenu: (event) => this.showNodeMenu(event),
     });
@@ -201,7 +218,8 @@ export class MindmapNoteView extends FileView {
     try {
       const { data, snapshot } = await this.session.applyEdit(request, file);
       this.shownNote = this.session.note;
-      if (request.type === 'delete') this.offerUndo(snapshot);
+      this.history.record(snapshot);
+      if (request.type === 'delete') this.offerUndo();
       return data;
     } catch (error) {
       // A stale refusal reloaded the session from the file's newer text: show it. A closed note has nothing to show
@@ -211,11 +229,16 @@ export class MindmapNoteView extends FileView {
     }
   }
 
-  /** The library's `onNodeOffsetsChange`: the whole reported set becomes the note's layout block. */
-  private async savePositions(offsets: NodeOffsets): Promise<void> {
+  /**
+   * The library's `onNodeOffsetsChange`: the whole reported set becomes the note's layout block. The positions a
+   * confirmed move drops belong to the move's undo step (one person action, one Ctrl+Z); a drop is its own step.
+   */
+  private async savePositions(offsets: NodeOffsets, cause: NodeOffsetsChangeCause): Promise<void> {
     try {
-      await this.session.savePositions(offsets, this.noteFile());
+      const snapshot = await this.session.savePositions(offsets, this.noteFile());
       this.shownNote = this.session.note;
+      if (cause === 'confirmedMove') this.history.recordInLastStep(snapshot);
+      else this.history.record(snapshot);
     } catch (error) {
       if (error instanceof NoteClosedError) return;
       // The map already shows the drop; show the file's state again (positions included) and say why.
@@ -241,26 +264,76 @@ export class MindmapNoteView extends FileView {
     if (submitted?.kind === 'refused') new Notice(submitted.reason);
   }
 
-  /** Destructive ops need undo: a notice with "Undo" that restores the text from before the delete. */
-  private offerUndo(snapshot: WriteSnapshot): void {
+  /** Destructive ops need undo: a notice with "Undo" (the same undo as Ctrl+Z, which the notice also teaches). */
+  private offerUndo(): void {
     const message = createFragment((fragment) => {
       fragment.createSpan({ text: `${DELETED_MESSAGE} ` });
       // Any click on a notice hides it, so the button needs no hide call of its own.
-      fragment.createEl('button', { text: UNDO_LABEL }).addEventListener('click', () => void this.undo(snapshot));
+      fragment.createEl('button', { text: UNDO_LABEL }).addEventListener('click', () => void this.undo());
     });
     this.undoNotice?.hide();
     this.undoNotice = new Notice(message, UNDO_NOTICE_MS);
   }
 
-  private async undo(snapshot: WriteSnapshot): Promise<void> {
+  /** Mod+Z / Mod+Shift+Z: the map's history, unless a text field or dialog has focus (then its own native undo). */
+  private handleHistoryKey(event: KeyboardEvent, action: () => Promise<void>): false | undefined {
+    if (keyBelongsToTextEntry(event.target instanceof HTMLElement ? event.target : null)) return undefined;
+    void action();
+    // `false` tells Obsidian to `preventDefault`.
+    return false;
+  }
+
+  private async undo(): Promise<void> {
+    const step = this.history.takeUndo();
+    if (step === null) {
+      new Notice(NOTHING_TO_UNDO_MESSAGE);
+      return;
+    }
+    await this.replayStep({
+      write: (file) => this.session.undo(step, file),
+      landed: () => this.history.undone(step),
+      changedSinceMessage: UNDO_CHANGED_SINCE_MESSAGE,
+      failedPrefix: UNDO_FAILED_PREFIX,
+    });
+  }
+
+  private async redo(): Promise<void> {
+    const step = this.history.takeRedo();
+    if (step === null) {
+      new Notice(NOTHING_TO_REDO_MESSAGE);
+      return;
+    }
+    await this.replayStep({
+      write: (file) => this.session.redo(step, file),
+      landed: () => this.history.redone(step),
+      changedSinceMessage: REDO_CHANGED_SINCE_MESSAGE,
+      failedPrefix: REDO_FAILED_PREFIX,
+    });
+  }
+
+  /**
+   * One undo or redo write: shows the file as written; moves the step to the other stack when it landed, else drops
+   * the whole history (every step builds on the text the previous one left) and says why.
+   */
+  private async replayStep(step: {
+    write: (file: NoteTextFile) => Promise<UndoResult>;
+    landed: () => void;
+    changedSinceMessage: string;
+    failedPrefix: string;
+  }): Promise<void> {
     try {
-      const result = await this.session.undo(snapshot, this.noteFile());
+      const result = await step.write(this.noteFile());
       this.render();
-      if (result === 'changedSince') new Notice(UNDO_CHANGED_SINCE_MESSAGE);
+      if (result === 'restored') {
+        step.landed();
+      } else {
+        this.history.clear();
+        new Notice(step.changedSinceMessage);
+      }
     } catch (error) {
       if (error instanceof NoteClosedError) return;
-      // E.g. the file could not be written: without this the click would fail silently.
-      new Notice(`${UNDO_FAILED_PREFIX} ${errorMessage(error)}`);
+      // E.g. the file could not be written: without this the key press would fail silently.
+      new Notice(`${step.failedPrefix} ${errorMessage(error)}`);
     }
   }
 

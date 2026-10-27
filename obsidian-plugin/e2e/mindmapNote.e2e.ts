@@ -20,7 +20,8 @@ import { ObsidianHarness, PLUGIN_ID } from './obsidianHarness';
  * it; drag a node, reopen the note -> the node is where it was left (ticket nid_kjtran7bnslnah9gj2fjr69rx_e); delete a
  * node from its right-click menu, then "Undo" -> the note text is back (ticket nid_48incacjmuach0kymaasz36du_e);
  * drag a node with a child onto another node and confirm "Make child" -> the branch is nested there in the note, and
- * deleting a node removes its child too (ticket nid_0v1xv98rj4u0fertn6uxlhbeg_e).
+ * deleting a node removes its child too (ticket nid_0v1xv98rj4u0fertn6uxlhbeg_e); add a child, Ctrl+Z -> the child
+ * is gone from the file, Ctrl+Shift+Z -> it is back (ticket nid_x9jc2ml9mws9tn4l013zuc68r_e).
  * Everything else is unit-tested. Serial: ONE Obsidian for the file. Imports only plugin modules that do not
  * import `obsidian`.
  */
@@ -47,6 +48,12 @@ const MOVED_NODE_ID = 'pantry';
 const NEW_PARENT_ID = 'cellar';
 /** The moved branch as the note should hold it: last child of the new parent, every level re-indented, ids kept. */
 const MOVED_BRANCH_LINES = '\t- Cellar ^cellar\n\t\t- Pantry ^pantry\n\t\t\t- Spices ^spices\n';
+const UNDO_MAP_PATH = 'Undo map.md';
+const UNDO_MAP_TEXT = ['---', 'organic-mindmap: 1', '---', '- Lab ^root', '\t- Bench ^bench', ''].join('\n');
+const UNDONE_CHILD_TEXT = 'Microscope';
+/** Obsidian's Mod is Control on Linux, where the E2E runs. */
+const UNDO_SHORTCUT = 'Control+z';
+const REDO_SHORTCUT = 'Control+Shift+z';
 /** Screen px to drag the node straight down; far enough to be a clear move, into empty canvas. */
 const DRAG_DOWN_PX = 120;
 const DRAG_STEPS = 12;
@@ -69,6 +76,7 @@ test.beforeAll(async () => {
       [POSITIONS_MAP_PATH]: POSITIONS_MAP_TEXT,
       [DELETE_MAP_PATH]: DELETE_MAP_TEXT,
       [MOVE_MAP_PATH]: MOVE_MAP_TEXT,
+      [UNDO_MAP_PATH]: UNDO_MAP_TEXT,
     },
   });
   page = harness.page;
@@ -321,5 +329,33 @@ test.describe('GIVEN a node with a child dragged onto another node', () => {
 
   test('WHEN the move is written THEN the map shows the node under its new parent', async () => {
     await expect.poll(async () => (await activeMapData())?.find((node) => node.id === MOVED_NODE_ID)?.parentId).toBe(NEW_PARENT_ID);
+  });
+});
+
+test.describe('GIVEN a child added on the map', () => {
+  test.beforeAll(async () => {
+    await harness.openFile(UNDO_MAP_PATH);
+    await expect.poll(activeViewType).toBe(MINDMAP_VIEW_TYPE);
+    await addChildViaPlus('root', UNDONE_CHILD_TEXT);
+    // The map shows the child only once the view has the written note (and so the undo step); the file alone may
+    // already hold the text while the view's write is still resolving.
+    await expect.poll(async () => (await activeMapData())?.map((node) => node.text)).toContain(UNDONE_CHILD_TEXT);
+    // Chromium drops focus from the hidden editor input only at the next frame; until then Ctrl+Z is the input's.
+    // (The hidden input is out of the accessibility tree, so this cannot go through a role locator.)
+    await page.waitForFunction(() => !(document.activeElement instanceof HTMLInputElement));
+  });
+
+  test('WHEN Ctrl+Z is pressed THEN the file text is back to what it was before the add', async () => {
+    await page.keyboard.press(UNDO_SHORTCUT);
+    await expect.poll(() => vaultFileText(UNDO_MAP_PATH)).toBe(UNDO_MAP_TEXT);
+  });
+
+  test('WHEN Ctrl+Shift+Z is pressed after the undo THEN the file holds the child again', async () => {
+    await page.keyboard.press(REDO_SHORTCUT);
+    await expect.poll(() => vaultFileText(UNDO_MAP_PATH)).toContain(UNDONE_CHILD_TEXT);
+  });
+
+  test('WHEN the map was undone and redone THEN the map shows the child', async () => {
+    await expect.poll(async () => (await activeMapData())?.map((node) => node.text)).toContain(UNDONE_CHILD_TEXT);
   });
 });

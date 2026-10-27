@@ -161,6 +161,13 @@ describe('MindmapNoteSession', () => {
       expect(session.note?.positions).toEqual({ c1: { dx: 1, dy: 2 } });
     });
 
+    it('WHEN offsets are saved THEN it resolves with the snapshot from the text before to the text written', async () => {
+      const { session, file } = loaded();
+      const before = file.text;
+      const snapshot = await session.savePositions({ c1: { dx: 1, dy: 2 } }, file);
+      expect(snapshot).toEqual({ before, after: file.text });
+    });
+
     it('WHEN two saves start together THEN the second lands too (writes run one after another)', async () => {
       const { session, file } = loaded();
       await Promise.all([session.savePositions({ c1: { dx: 1, dy: 1 } }, file), session.savePositions({ c1: { dx: 2, dy: 2 } }, file)]);
@@ -222,6 +229,31 @@ describe('MindmapNoteSession', () => {
         file.text = changedAfterDelete;
         await session.undo(snapshot, file);
         expect(file.text).toBe(changedAfterDelete);
+      });
+    });
+
+    describe('AND it was undone', () => {
+      it('WHEN it is redone THEN the file holds the text the delete left', async () => {
+        const { session, file, snapshot } = await deleted();
+        await session.undo(snapshot, file);
+        await session.redo(snapshot, file);
+        expect(file.text).toBe(snapshot.after);
+      });
+
+      it('WHEN it is redone THEN the session shows the note without the node', async () => {
+        const { session, file, snapshot } = await deleted();
+        await session.undo(snapshot, file);
+        await session.redo(snapshot, file);
+        expect(session.note?.toMindmapData().map((node) => node.id)).toEqual(['root']);
+      });
+
+      it('WHEN the file changed after the undo THEN redo says the file changed since and the newer text stays', async () => {
+        const { session, file, snapshot } = await deleted();
+        await session.undo(snapshot, file);
+        const typedAfterUndo = noteText('---', 'organic-mindmap: 1', '---', '- Root ^root', '\t- Child typed ^c1');
+        file.text = typedAfterUndo;
+        expect(await session.redo(snapshot, file)).toBe('changedSince');
+        expect(file.text).toBe(typedAfterUndo);
       });
     });
   });

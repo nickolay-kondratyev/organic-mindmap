@@ -127,18 +127,30 @@ export class MindmapNoteSession {
 
   /**
    * Saves `offsets` as the note's whole layout (what the map reports after a drop); ids not in the note are
-   * dropped. Rejects with {@link STALE_POSITIONS_REASON} when the note changed under the map (then like `applyEdit`).
+   * dropped. Resolves with the snapshot to undo it (`before === after` when the note already held these positions).
+   * Rejects with {@link STALE_POSITIONS_REASON} when the note changed under the map (then like `applyEdit`).
    */
-  async savePositions(offsets: NodeOffsets, file: NoteTextFile): Promise<void> {
-    await this.write((note) => ({ kind: 'written', text: note.setPositions(offsets) }), file, STALE_POSITIONS_REASON);
+  async savePositions(offsets: NodeOffsets, file: NoteTextFile): Promise<WriteSnapshot> {
+    const { snapshot } = await this.write((note) => ({ kind: 'written', text: note.setPositions(offsets) }), file, STALE_POSITIONS_REASON);
+    return snapshot;
   }
 
   /** Puts back the text from before `snapshot`'s write, only while the file still holds the text it left. */
   undo(snapshot: WriteSnapshot, file: NoteTextFile): Promise<UndoResult> {
+    return this.swapText(snapshot.after, snapshot.before, file);
+  }
+
+  /** Puts back the text `snapshot`'s write left, only while the file still holds the text from before it (an undone step). */
+  redo(snapshot: WriteSnapshot, file: NoteTextFile): Promise<UndoResult> {
+    return this.swapText(snapshot.before, snapshot.after, file);
+  }
+
+  /** Replaces `expected` with `replacement` in the file, only while the file holds exactly `expected`. */
+  private swapText(expected: string, replacement: string, file: NoteTextFile): Promise<UndoResult> {
     return this.enqueue(async (open) => {
-      const text = await file.process((fileText) => (fileText === snapshot.after ? snapshot.before : fileText));
+      const text = await file.process((fileText) => (fileText === expected ? replacement : fileText));
       open.load(text);
-      return text === snapshot.before ? 'restored' : 'changedSince';
+      return text === replacement ? 'restored' : 'changedSince';
     });
   }
 
