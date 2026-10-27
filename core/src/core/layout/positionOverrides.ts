@@ -108,6 +108,20 @@ export function subtreeMoveBy(positions: NodePositions, tree: MindmapTree, nodeI
 }
 
 /**
+ * Side `nodeId`'s children grow toward in `positions`: the side of its parent it is on (the layout grows away from
+ * the parent, and every crossing of the parent's centre line mirrors the subtree, see `subtreeMoveTo`). `null` for
+ * the root (its children pick a side) or a node without a position.
+ * Ceiling: on pushed-apart positions this shares `subtreeMoveTo`'s ceiling (a node pushed across its parent's centre
+ * line by collisions reads the wrong side).
+ */
+export function childGrowthSideOf(positions: NodePositions, tree: MindmapTree, nodeId: NodeId): Side | null {
+  const parentNode = tree.parentOf(nodeId);
+  const point = positions.get(nodeId);
+  const parent = parentNode === null ? undefined : positions.get(parentNode.id);
+  return point === undefined || parent === undefined ? null : horizontalSideOf(point.x, parent.x);
+}
+
+/**
  * Which side of `parentX` a centre at `x` is on. Exactly on the line counts as right.
  * WHY-NOT a third "on the line" answer meaning "no change": the drag preview compares against where the node is
  * drawn, while `applyPositionOverrides` compares against its laid-out spot. A binary side keeps both answers equal

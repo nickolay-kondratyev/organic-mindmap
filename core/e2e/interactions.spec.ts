@@ -27,7 +27,7 @@ test.describe('canvas interactions (spec I1-I5)', () => {
     await page.goto('/');
     const vida = await nodeBox(page, 'vida');
     const zoom = await viewZoom(page);
-    // VIDA is on the right side; take its outer "+", just right of it.
+    // VIDA is on the right side, so its "+" sits just right of it.
     const plus = { x: vida.center.x + vida.size.width / 2 + (HANDLE_GAP + HANDLE_RADIUS) * zoom, y: vida.center.y };
     await page.mouse.move(vida.center.x, vida.center.y);
     await page.mouse.move(plus.x, plus.y, { steps: Math.ceil((plus.x - vida.center.x) / POINTER_STEP_PX) });

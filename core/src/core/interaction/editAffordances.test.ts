@@ -24,8 +24,8 @@ const scene: HitScene = {
 const HOVERING_R: HandleVisibility = { hoveredNodeId: 'r', busy: false, interaction: DEFAULTS };
 
 describe('shownHandles', () => {
-  it('WHEN a node is hovered with default config THEN its "+" shows on both sides', () => {
-    expect(shownHandles(scene, HOVERING_R).map((handle) => handle.side)).toEqual(['left', 'right']);
+  it('WHEN a node is hovered with default config THEN its "+" shows', () => {
+    expect(shownHandles(scene, HOVERING_R).map((handle) => handle.kind)).toEqual(['add-child']);
   });
 
   it('WHEN adding is switched off THEN no "+" shows', () => {

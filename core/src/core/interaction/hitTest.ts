@@ -1,4 +1,5 @@
 import type { NodePositions } from '../layout/layoutTypes';
+import { childGrowthSideOf } from '../layout/positionOverrides';
 import type { NodeId, Point, Side } from '../model/node';
 import type { MindmapTree } from '../model/tree';
 import type { NodeBox, NodeShape } from '../shape/nodeShape';
@@ -17,7 +18,7 @@ export const HANDLE_RADIUS = 10;
 export const HANDLE_GAP = 6;
 
 /**
- * Hover button of a node (spec I4): a "+" on either side of it adds a child.
+ * Hover button of a node (spec I4): a "+" adds a child.
  * WHY-NOT a delete "x": deleting in a note is destructive, so the map does not offer it (the `delete` edit request
  * stays in the protocol for hosts that offer it through their own UI).
  */
@@ -50,15 +51,19 @@ export function nodeBoxOf(scene: HitScene, nodeId: NodeId): NodeBox | null {
 }
 
 /**
- * Buttons shown while `nodeId` is hovered: a "+" on both sides of every node. Both add a child; only for the root
- * does the side carry meaning (its children pick a side, see `addDraftRequest`).
- * WHY-NOT one "+" on the node's outer side: the tree side does not follow a branch dragged across the root, so its
- * "+" would point into the map.
+ * Buttons shown while `nodeId` is hovered: the root has a "+" on both sides (its children pick a side, see
+ * `addDraftRequest`); any other node one "+" on the side its children grow toward, so the new child appears next to it.
+ * WHY-NOT the tree side (`sideOf`): it does not follow a branch dragged across the root, so that "+" would point
+ * into the map.
+ * WHY-NOT a "+" on both sides of every node: a child added from the inner one would still appear on the outer side;
+ * honouring it needs per-node sides in the layout.
  */
 export function nodeHandles(scene: HitScene, nodeId: NodeId): readonly NodeHandle[] {
   const box = nodeBoxOf(scene, nodeId);
   if (box === null) return [];
-  return [addChildHandle(box, nodeId, 'left'), addChildHandle(box, nodeId, 'right')];
+  const side = childGrowthSideOf(scene.positions, scene.tree, nodeId);
+  if (side === null) return [addChildHandle(box, nodeId, 'left'), addChildHandle(box, nodeId, 'right')];
+  return [addChildHandle(box, nodeId, side)];
 }
 
 /**

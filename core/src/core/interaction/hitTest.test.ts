@@ -51,56 +51,41 @@ describe('nodeAt', () => {
 });
 
 describe('nodeHandles', () => {
-  it('WHEN asked for a right-side node THEN it offers a "+" on each side', () => {
-    expect(nodeHandles(scene, 'r').map((handle) => handle.side)).toEqual(['left', 'right']);
+  it('WHEN asked for a right-side node THEN its one "+" sits on its right (outer) side', () => {
+    expect(nodeHandles(scene, 'r').map((handle) => handle.center)).toEqual([{ x: 300 + HANDLE_REACH_X, y: 0 }]);
   });
 
-  it('WHEN asked for a right-side node THEN its "+" buttons sit just left and just right of it', () => {
-    expect(nodeHandles(scene, 'r').map((handle) => handle.center)).toEqual([
-      { x: 300 - HANDLE_REACH_X, y: 0 },
-      { x: 300 + HANDLE_REACH_X, y: 0 },
-    ]);
+  it('WHEN asked for a left-side node THEN its one "+" sits on its left (outer) side', () => {
+    expect(nodeHandles(scene, 'l').map((handle) => handle.center)).toEqual([{ x: -300 - HANDLE_REACH_X, y: 0 }]);
   });
 
-  it('WHEN asked for a left-side node THEN its "+" buttons sit just left and just right of it', () => {
-    expect(nodeHandles(scene, 'l').map((handle) => handle.center)).toEqual([
-      { x: -300 - HANDLE_REACH_X, y: 0 },
-      { x: -300 + HANDLE_REACH_X, y: 0 },
-    ]);
-  });
-
-  it('WHEN asked for a non-root node THEN both "+" add a child of that node (no delete button)', () => {
+  it('WHEN asked for a non-root node THEN its "+" adds a child of that node (no delete button)', () => {
     const actions = nodeHandles(scene, 'l').map((handle) => ({ kind: handle.kind, nodeId: handle.nodeId }));
-    expect(actions).toEqual([
-      { kind: 'add-child', nodeId: 'l' },
-      { kind: 'add-child', nodeId: 'l' },
-    ]);
+    expect(actions).toEqual([{ kind: 'add-child', nodeId: 'l' }]);
   });
 
   it('WHEN asked for the root THEN it offers a "+" for each side', () => {
     const sides = nodeHandles(scene, 'root').map((handle) => handle.side);
     expect(sides).toEqual(['left', 'right']);
   });
+
+  it('GIVEN a right-side node drawn left of its parent (dragged across) WHEN asked for it THEN its "+" sits on its left', () => {
+    const draggedAcross: HitScene = { ...scene, positions: new Map([...positions, ['r', { x: -200, y: 100 }]]) };
+    expect(nodeHandles(draggedAcross, 'r').map((handle) => handle.side)).toEqual(['left']);
+  });
 });
 
 describe('pointerTargetAt', () => {
   const plusOfLeft: Point = { x: -300 - HANDLE_REACH_X, y: 0 };
-  /** The "+" of the left node `l` on its inner side, facing the root. */
-  const innerPlusOfLeft: Point = { x: -300 + HANDLE_REACH_X, y: 0 };
 
   it('GIVEN the node is hovered WHEN the point is on its "+" THEN the "+" button is hit', () => {
     const target = pointerTargetAt(scene, plusOfLeft, ellipseShape, 'l');
     expect(target.kind === 'handle' && target.handle.kind).toBe('add-child');
   });
 
-  it('GIVEN the node is hovered WHEN the point is on its inner-side "+" THEN that "+" of the node is hit', () => {
-    const target = pointerTargetAt(scene, innerPlusOfLeft, ellipseShape, 'l');
-    expect(target.kind === 'handle' && { nodeId: target.handle.nodeId, side: target.handle.side }).toEqual({ nodeId: 'l', side: 'right' });
-  });
-
-  it('GIVEN the node is hovered WHEN the point is in the gap between it and its inner-side "+" THEN the node keeps its hover', () => {
-    const innerGap = { x: -300 + HALF_WIDTH + HANDLE_GAP / 2, y: 0 };
-    expect(pointerTargetAt(scene, innerGap, ellipseShape, 'l')).toEqual({ kind: 'near-handles', nodeId: 'l' });
+  it('GIVEN the node is hovered WHEN the point is where an inner-side "+" would be THEN it is not a button', () => {
+    const innerSide = { x: -300 + HANDLE_REACH_X, y: 0 };
+    expect(pointerTargetAt(scene, innerSide, ellipseShape, 'l').kind).not.toBe('handle');
   });
 
   it('GIVEN no node is hovered WHEN the point is where a "+" would be THEN it is empty canvas', () => {
@@ -147,10 +132,5 @@ describe('sameHandle', () => {
 
   it('WHEN the root "+" buttons of both sides are compared THEN they differ', () => {
     expect(sameHandle(left ?? null, right ?? null)).toBe(false);
-  });
-
-  it('WHEN the "+" buttons of both sides of a non-root node are compared THEN they differ', () => {
-    const [nodeLeft, nodeRight] = nodeHandles(scene, 'l');
-    expect(sameHandle(nodeLeft ?? null, nodeRight ?? null)).toBe(false);
   });
 });
