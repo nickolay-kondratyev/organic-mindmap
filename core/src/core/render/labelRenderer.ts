@@ -42,7 +42,7 @@ export function drawLabels(
     for (const node of scene.tree.nodes) {
       const box = boxOf(scene, node.id);
       if (box === null) continue;
-      drawNodeLabel(ctx, config, fonts.node, fallback, node.text, box, node.parentId === null);
+      drawNodeLabel(ctx, config, fonts.node, fallback, node.text, box, nodeLabelInk(config, node.parentId === null, node.link === true));
     }
   }
 }
@@ -54,13 +54,13 @@ function drawNodeLabel(
   fallback: LabelFallback,
   text: string,
   box: NodeBox,
-  isRoot: boolean,
+  ink: LabelInk,
 ): void {
   const style = config.text.node;
   const maxWidthPx = box.size.width * NODE_LABEL_WIDTH_FRACTION;
   if (!font.coversText(text)) {
     const systemStyle = { family: fallback.nodeFontFamily, sizePx: style.sizePx, letterSpacingEm: style.letterSpacingEm };
-    paintSystemTextLabel(ctx, text, box.center, maxWidthPx, systemStyle, nodeLabelInk(config, isRoot), config.text.nodeFit);
+    paintSystemTextLabel(ctx, text, box.center, maxWidthPx, systemStyle, ink, config.text.nodeFit);
     return;
   }
   const full = font.shape(text);
@@ -70,14 +70,22 @@ function drawNodeLabel(
   const shaped = fit.truncated ? truncatedShapedText(full, ellipsis, fit.keptCount) : full;
   const run = runOf(shaped);
   const layout = layoutNodeLabel(box.center, run, { ...style, sizePx: fit.sizePx });
-  paintLabel(ctx, font, shaped, run, layout, nodeLabelInk(config, isRoot));
+  paintLabel(ctx, font, shaped, run, layout, ink);
 }
 
-/** The root label uses the root text color and is always bold (spec R3). */
-export function nodeLabelInk(config: MindmapConfig, isRoot: boolean): LabelInk {
+/**
+ * The root label uses the root text color and is always bold (spec R3). A link label (`MindmapNode.link`) is
+ * underlined in `theme.color.link`, the root's too.
+ */
+export function nodeLabelInk(config: MindmapConfig, isRoot: boolean, isLink: boolean): LabelInk {
   const style = config.text.node;
-  if (!isRoot) return inkOf(style, config.theme.color.nodeText, config);
-  return { ...inkOf(style, config.theme.color.root.text, config), bold: true };
+  if (!isRoot) return inkOf(style, config.theme.color.nodeText, isLink, config);
+  return { ...inkOf(style, config.theme.color.root.text, isLink, config), bold: true };
+}
+
+/** Branch labels use the branch text color; a link label is underlined in `theme.color.link`. */
+export function branchLabelInk(config: MindmapConfig, isLink: boolean): LabelInk {
+  return inkOf(config.text.branch, config.theme.color.branchText, isLink, config);
 }
 
 function drawBranchLabel(
@@ -89,13 +97,14 @@ function drawBranchLabel(
   branch: Branch,
 ): void {
   const style = config.text.branch;
-  const text = scene.tree.nodeById(branch.childId).text;
+  const child = scene.tree.nodeById(branch.childId);
+  const text = child.text;
   if (!font.coversText(text)) return;
   const shaped = font.shape(text);
   const run = new GlyphRun(shaped.advancesEm, style.stretch);
   const layout = layoutSceneBranchLabel(scene, config, extensions, run, branch);
   if (layout === null) return;
-  paintLabel(ctx, font, shaped, run, layout, inkOf(style, config.theme.color.branchText, config));
+  paintLabel(ctx, font, shaped, run, layout, branchLabelInk(config, child.link === true));
 }
 
 /** Lays out the child's label along `branch` between the two node rims; `null` when a node has no box. */
@@ -113,9 +122,10 @@ export function layoutSceneBranchLabel(
   return layoutBranchLabel(branch.path, span, run, config.text.branch, config.text.branchFit);
 }
 
-function inkOf(style: FontConfig, fill: string, config: MindmapConfig): LabelInk {
+function inkOf(style: FontConfig, textColor: string, isLink: boolean, config: MindmapConfig): LabelInk {
   return {
-    fill,
+    fill: isLink ? config.theme.color.link : textColor,
+    underline: isLink,
     outline: config.theme.color.textOutline,
     outlineWidthPx: style.outlineWidthPx,
     bold: style.bold,

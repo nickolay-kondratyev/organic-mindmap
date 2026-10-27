@@ -132,6 +132,9 @@ branches per pointer move, over a frozen base scene.
   and fit via the R15 cascade in `text/branchTextFit.ts`. Node labels fit via `text/nodeTextFit.ts`: shrink down to
   `text.nodeFit.minFontScale` (default 0 = unlimited, today's look), then cut and end with "…"; the fit is
   measurement-agnostic (glyph runs or `measureText`).
+  Link nodes (`MindmapNode.link`, set by the host) are inked in `theme.color.link` and underlined on both the node
+  and the branch (`text/labelUnderline.ts`: one segment under each placed glyph, so the line follows the curve;
+  painted before the glyphs with the same outline), and show the pointer cursor. Unmarked labels are unchanged.
   Fallback (the one R17 exception): a label with a character its font lacks (`LoadedFont.coversText`: glyph 0 by
   code point; whitespace, U+200D and variation selectors never count) is skipped on its branch and drawn on its node
   by `paintSystemTextLabel` with `fillText` and the CSS family list from `CssFontFaces` (label font first, so the

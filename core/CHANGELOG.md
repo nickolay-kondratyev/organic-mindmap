@@ -7,6 +7,9 @@ While 0.x, a minor version may change the API.
 ## Unreleased
 
 ### Added
+- Link nodes: `MindmapNode.link: true` draws the node's label underlined and in the new `theme.color.link` (pale
+  sky blue by default), on the node and along its branch, with the pointer cursor, so the user can tell the node
+  opens something on click. Unmarked nodes look as before.
 - Restore saved node positions: `nodeOffsets` (mount option and `<Mindmap>` prop) and `setNodeOffsets(offsets)` on
   the handle take user-placed nodes by id as offsets from their parent (`NodeOffsets`, e.g.
   `{ "n7f3k": { "dx": 120, "dy": -40 } }`). `onNodeOffsetsChange(offsets)` reports all of them after every drop (and

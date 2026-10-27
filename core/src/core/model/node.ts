@@ -21,6 +21,11 @@ export interface MindmapNode {
   readonly colorIndex?: number;
   /** Overrides the depth-based default from the node size resolver (spec R4). */
   readonly size?: NodeSize;
+  /**
+   * Drawn as a link (underlined, in `theme.color.link`, pointer cursor) so the user can tell the node opens
+   * something when clicked. The host decides what a click opens (`onNodeClick`).
+   */
+  readonly link?: boolean;
 }
 
 export type MindmapData = readonly MindmapNode[];
